@@ -1,0 +1,65 @@
+id: infographie_probleme
+name: Infographie problème → symptômes
+description: >
+  Visuel pédagogique : un titre qui pose un problème, une liste de 4 à 6 situations ou causes avec
+  icônes ou illustration, éventuellement un personnage explicatif. Le hook est la reconnaissance
+  (« ça me parle »), avant toute présentation du produit.
+status: draft
+
+ratios: ["4:5", "1:1"]
+objectives: [awareness, traffic, lead]
+hook_types: [problem_solution, curiosity]
+niches_fit: []   # universel, avec avertissement fort en santé
+
+zones:
+  - id: headline
+    role: headline
+    max_chars: 70
+    position: haut
+  - id: items
+    role: list
+    max_chars: 40
+    position: centre, 4 à 6 lignes avec icônes (max_chars s'applique à chaque ligne)
+  - id: illustration
+    role: image
+    required: false
+    position: côté ou fond (personnage, schéma)
+  - id: brand
+    role: logo
+    required: false
+    position: coin bas
+  - id: cta
+    role: cta
+    max_chars: 20
+    required: false
+    position: bas
+
+asset_needs:
+  packshot: false
+  lifestyle: false
+  person: false
+  generated_scene_ok: true
+
+layout_notes: >
+  Deux variantes observées : (1) fond sombre, mot « PROBLEM: » en tête et un paragraphe court avec
+  illustration (bactéries) ; (2) fond clair, personnage en blouse à droite et liste d'icônes à gauche.
+  Typographie simple, couleurs vives limitées à 2 ou 3, texte lisible au format mobile.
+when_to_use: >
+  Problème quotidien mal compris que le produit résout (rangement, énergie, sommeil de l'appareil,
+  entretien...) ; contenu éducatif qui prépare l'achat.
+when_to_avoid: >
+  Santé et bien-être : Meta refuse les pubs qui affirment ou sous-entendent que la personne a une
+  condition médicale (« vous avez peut-être... »). Reformuler en situation générale, sans diagnostic,
+  et faire relire par un humain.
+
+source:
+  ad_library_ids: ["851383940559052", "861704329626854"]
+  advertisers: [Silver Fern Brand]
+  observed_on: 2026-09-25
+  observed_running_days: 339
+  notes: >
+    Deux visuels du même annonceur à 339 jours. Le contenu observé est de santé (risqué) : on garde
+    la structure, pas les allégations.
+
+tags: [pedagogique, liste, icones, avertissement-sante]
+score: null

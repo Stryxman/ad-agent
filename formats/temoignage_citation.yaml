@@ -1,9 +1,9 @@
-# Format d'exemple pour valider le schéma — à remplacer/compléter lors de la session de curation.
 id: temoignage_citation
-name: Témoignage en citation
+name: Témoignage / avis client
 description: >
-  Grande citation client entre guillemets, note en étoiles, et le produit en visuel secondaire.
-  La preuve sociale est le hook : le texte du client porte le message.
+  Une citation ou une capture d'avis client occupe l'essentiel de l'espace, avec un court titre
+  d'accroche, la signature, et éventuellement les étoiles. La preuve sociale est le hook : la voix du
+  client porte le message.
 status: draft
 
 ratios: ["4:5", "1:1"]
@@ -12,13 +12,18 @@ hook_types: [social_proof]
 niches_fit: []   # universel
 
 zones:
+  - id: title
+    role: headline
+    max_chars: 40
+    required: false
+    position: haut, court (ex. « Meilleure semaine »)
   - id: stars
     role: badge
     required: false
-    position: haut
+    position: au-dessus ou dans la carte d'avis
   - id: quote
     role: headline
-    max_chars: 90
+    max_chars: 140
     position: centre
   - id: author
     role: subhead
@@ -26,10 +31,12 @@ zones:
     position: sous la citation
   - id: product
     role: image
-    position: bas droite
+    required: false
+    position: coin bas ou intégré
   - id: cta
     role: cta
     max_chars: 20
+    required: false
     position: bas
 
 asset_needs:
@@ -39,19 +46,24 @@ asset_needs:
   generated_scene_ok: true
 
 layout_notes: >
-  Citation dominante (60 % de la surface utile), fond uni ou texture douce aux couleurs de la DA.
-  Produit en second plan, jamais devant le texte. CTA discret en bas.
+  Deux variantes observées : (1) carte citation sur fond uni doux, avec petit titre en haut, texte de
+  l'avis en corps généreux, signature « — Prénom Nom », icône de flèche ; (2) fond orange vif, titre
+  en gros (« Real. Reliable. »), carte d'avis blanche façon capture (prénom, étoiles, texte).
+  Le texte de l'avis doit être lisible à la taille d'un téléphone.
 when_to_use: >
   Produit avec de vrais avis clients, audience qui hésite (achat de considération).
 when_to_avoid: >
-  Produit sans avis réels : ne jamais inventer un témoignage.
+  Produit sans avis réels : ne jamais inventer un témoignage. En santé, ne pas citer d'avis qui
+  promettent un résultat médical.
 
 source:
-  ad_library_id: null
-  url: null
-  advertiser: null
-  observed_running_days: null
-  notes: Format générique, pas encore rattaché à une pub observée.
+  ad_library_ids: ["501575839604108", "1809729827103412"]
+  advertisers: [Lindsey Parry, Siliconedepot]
+  observed_on: 2026-09-25
+  observed_running_days: 648
+  notes: >
+    Citation sur fond uni diffusée 648 jours (petit annonceur, à recouper) ; carte d'avis façon capture
+    diffusée 119 jours.
 
-tags: [preuve-sociale, texte-dominant]
+tags: [preuve-sociale, texte-dominant, avis]
 score: null

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
@@ -108,10 +109,12 @@ class AssetNeeds(BaseModel):
 class Source(BaseModel):
     """D'où vient le format. On ne stocke jamais le visuel du concurrent, seulement une référence."""
 
-    ad_library_id: str | None = None
-    url: str | None = None
-    advertiser: str | None = None
-    observed_running_days: int | None = None
+    ad_library_ids: list[str] = Field(default_factory=list)
+    advertisers: list[str] = Field(default_factory=list)
+    observed_on: date | None = Field(default=None, description="Date de l'observation dans la bibliothèque")
+    observed_running_days: int | None = Field(
+        default=None, description="Plus longue durée de diffusion observée parmi les pubs de référence"
+    )
     notes: str = ""
 
 

@@ -1,0 +1,56 @@
+id: fond_uni_packshots_prix
+name: Fond uni + packshots + titre orienté prix
+description: >
+  Aplat de couleur de marque, titre gros et court, produits disposés en éventail ou en grille, et une
+  information de prix ou de plan (« à partir de X par jour »). Le hook est la simplicité de l'offre.
+status: draft
+
+ratios: ["9:16", "4:5"]
+objectives: [conversion]
+hook_types: [offer, benefit]
+niches_fit: []   # universel
+
+zones:
+  - id: headline
+    role: headline
+    max_chars: 50
+    position: haut
+  - id: subhead
+    role: subhead
+    max_chars: 70
+    required: false
+    position: sous le titre ou en pied
+  - id: products
+    role: image
+    position: centre, plusieurs packshots dynamiques
+  - id: logo
+    role: logo
+    required: false
+    position: coin
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: false
+  generated_scene_ok: false
+
+layout_notes: >
+  Couleur de fond saturée issue de la DA (orange, vert profond). Titre en blanc ou couleur claire, très
+  gros. Produits légèrement inclinés, parfois débordant du cadre pour donner du rythme. Le prix (ou
+  « X par jour ») est dans le titre ou juste dessous.
+when_to_use: >
+  Produit avec un emballage reconnaissable et un prix facile à exprimer en unité simple (par jour, par mois).
+when_to_avoid: >
+  Produit dont le packaging est peu distinctif : préférer une scène (titre_produit_en_situation).
+
+source:
+  ad_library_ids: ["1379855453993143", "1370503311807486"]
+  advertisers: ["The Farmer's Dog"]
+  observed_on: 2026-09-25
+  observed_running_days: 99
+  notes: >
+    Exemples : « Our new topper plans start at $2/day » (fond vert foncé, 99 j) et « Meal Plans for the
+    Entire Pack » (fond orange, 95 j).
+
+tags: [aplat, packshots, prix-unitaire]
+score: null

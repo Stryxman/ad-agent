@@ -1,0 +1,60 @@
+id: spotlight_fonctionnalite
+name: Spotlight fonctionnalité
+description: >
+  Un seul argument par pub : le logo en haut, une accroche courte qui énonce une fonctionnalité concrète,
+  le nom du produit en sous-titre et le produit en grand, souvent sur fond dégradé ou ambiance
+  technologique. Un bouton d'action clôt la composition. Se décline en série, une fonctionnalité par visuel.
+status: draft
+
+ratios: ["1:1", "4:5", "9:16"]
+objectives: [conversion, traffic]
+hook_types: [benefit, curiosity]
+niches_fit: [tech, autre]
+
+zones:
+  - id: logo
+    role: logo
+    position: haut gauche
+  - id: headline
+    role: headline
+    max_chars: 40
+    position: haut, sous le logo
+  - id: product_name
+    role: subhead
+    max_chars: 40
+    position: sous l'accroche
+  - id: product
+    role: image
+    position: centre, en grand
+  - id: cta
+    role: cta
+    max_chars: 12
+    required: false
+    position: bas centre
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: false
+  generated_scene_ok: true
+
+layout_notes: >
+  Accroche courte (3 à 7 mots) comme « Pack Lighter, Be Present » ou « Detects Local Voltage in
+  1 Second ». Produit éclairé et net, fond dégradé (bleu, gris) qui met en valeur la forme.
+  La série garde le même gabarit et ne change que l'accroche et le cadrage du produit.
+when_to_use: >
+  Produit avec des fonctionnalités concrètes et mesurables (chargeurs, gadgets, appareils, outils).
+when_to_avoid: >
+  Produit émotionnel sans argument technique précis, ou niche où le résultat visé est corporel.
+
+source:
+  ad_library_ids: ["2598275300597800", "1455834783070242", "1802621417401900"]
+  advertisers: [Anker]
+  observed_on: 2026-09-25
+  observed_running_days: 11
+  notes: >
+    Série d'au moins 10 visuels au même gabarit, diffusée depuis 8 à 11 jours seulement : la durée n'est
+    pas encore un signal de rentabilité, mais la régularité du gabarit oui. À reconfirmer.
+
+tags: [serie, fonctionnalite, packshot, dégradé]
+score: null

@@ -38,10 +38,10 @@ when_to_use: ""
 when_to_avoid: ""
 
 source:                  # référence uniquement, pas de copie du visuel
-  ad_library_id: null
-  url: null
-  advertiser: null
-  observed_running_days: null   # durée de diffusion observée (indice de rentabilité)
+  ad_library_ids: []            # IDs Meta Ad Library des pubs de référence
+  advertisers: []
+  observed_on: null             # AAAA-MM-JJ, date de l'observation
+  observed_running_days: null   # plus longue durée de diffusion observée (indice de rentabilité)
   notes: ""
 
 tags: []

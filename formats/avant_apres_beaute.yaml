@@ -1,0 +1,74 @@
+id: avant_apres_beaute
+name: Avant / après (beauté)
+description: >
+  Deux ou trois états de la même zone du visage côte à côte (ou en frise Jour 1 / Jour 7 / Jour 30),
+  avec des libellés de temps et l'emballage du produit. La preuve visuelle est le hook.
+status: draft
+
+ratios: ["4:5", "1:1"]
+objectives: [conversion]
+hook_types: [before_after]
+niches_fit: [beaute]   # réservé à la beauté ; pas de santé/bien-être
+
+zones:
+  - id: before
+    role: image
+    position: gauche (ou premier tiers)
+  - id: after
+    role: image
+    position: droite (ou dernier tiers)
+  - id: before_label
+    role: badge
+    max_chars: 12
+    position: sur l'image « avant », ex. « Jour 1 »
+  - id: after_label
+    role: badge
+    max_chars: 12
+    position: sur l'image « après », ex. « Jour 30 »
+  - id: headline
+    role: headline
+    max_chars: 50
+    required: false
+    position: haut
+  - id: disclaimer
+    role: subhead
+    max_chars: 80
+    position: bas, petit (ex. « Résultats variables selon les personnes »)
+  - id: product
+    role: image
+    required: false
+    position: bas ou milieu de frise
+  - id: cta
+    role: cta
+    max_chars: 20
+    required: false
+    position: bas
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: true
+  generated_scene_ok: false   # jamais d'avant/après généré par IA : il faut de vraies photos
+
+layout_notes: >
+  Deux visuels de même cadrage et de même lumière pour que la comparaison soit honnête. Libellés de
+  durée en pastilles. En frise, trois vignettes alignées avec le produit correspondant sous chacune.
+when_to_use: >
+  Soin dont le résultat est visible sur la durée (peau, cheveux, ongles), avec de vraies photos clients
+  consentantes et une durée d'usage réaliste.
+when_to_avoid: >
+  Toute promesse médicale ou corporelle, toute niche santé/bien-être, toute photo retouchée ou générée.
+  Risque de refus par Meta (attributs personnels, avant/après). Vérifier les règles en vigueur.
+
+source:
+  ad_library_ids: ["26070880785894241", "1377943017837992", "1351971557033344"]
+  advertisers: [Anne's Skincare Blog, Tirtir Global, ELEN LORÉ]
+  observed_on: 2026-09-25
+  observed_running_days: 195
+  notes: >
+    Frise Jour 1 / 7 / 30 sur le contour des yeux (195 j, US) ; infographie avant/après avec statistiques
+    (5 j, US) ; portraits côte à côte avec long récit en légende (123 j, FR). Ces annonceurs contiennent
+    des promesses que Meta est susceptible de refuser : ne reprendre que la structure.
+
+tags: [preuve-visuelle, comparaison-temporelle, risque-politique]
+score: null

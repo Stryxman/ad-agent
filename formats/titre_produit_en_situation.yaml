@@ -1,0 +1,61 @@
+id: titre_produit_en_situation
+name: Titre court + produit en situation
+description: >
+  Photo plein cadre de l'utilisateur final (ici un animal) avec le produit visible, et une accroche courte
+  incrustée, souvent liée à un moment (saison, événement). Une petite ligne d'offre est posée en bas.
+  Le hook est l'émotion ou le contexte, l'offre reste secondaire.
+status: draft
+
+ratios: ["9:16", "4:5"]
+objectives: [conversion, awareness]
+hook_types: [benefit, curiosity, offer]
+niches_fit: []   # universel
+
+zones:
+  - id: headline
+    role: headline
+    max_chars: 45
+    position: haut ou centre, sur zone calme de la photo
+  - id: scene
+    role: image
+    position: plein cadre
+  - id: product
+    role: image
+    required: false
+    position: dans la scène, au premier plan
+  - id: offer_line
+    role: subhead
+    max_chars: 60
+    required: false
+    position: bas
+  - id: logo
+    role: logo
+    required: false
+    position: bas ou coin
+
+asset_needs:
+  packshot: true
+  lifestyle: true
+  person: false
+  generated_scene_ok: true
+
+layout_notes: >
+  Le sujet de la photo (animal, personne) est cadré au centre-bas ; le texte se place dans les zones
+  libres, avec fort contraste (à-plat ou ombre douce). Couleurs de la marque reprises dans la typographie
+  ou un bandeau. Les accroches observées sont de courtes phrases (4 à 8 mots), parfois avec un jeu de mots
+  de saison.
+when_to_use: >
+  Produit du quotidien avec une dimension émotionnelle ou saisonnière (animaux, food, lifestyle).
+when_to_avoid: >
+  Produit très technique dont le message est une fonctionnalité précise (voir spotlight_fonctionnalite).
+
+source:
+  ad_library_ids: ["1319237700096025", "1484930463204084"]
+  advertisers: ["The Farmer's Dog"]
+  observed_on: 2026-09-25
+  observed_running_days: 183
+  notes: >
+    Plusieurs pubs de la même marque à 183 jours, dont des accroches saisonnières (football américain).
+
+tags: [emotion, saisonnier, photo-plein-cadre]
+score: null

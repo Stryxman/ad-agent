@@ -59,3 +59,15 @@ def test_format_with_niches_fit_is_restricted():
 def test_unknown_niche_is_rejected():
     with pytest.raises(ValidationError):
         AdFormat.model_validate({**BASE_FORMAT, "niches_fit": ["crypto"]})
+
+
+def test_every_format_documents_its_source():
+    for fmt in load_all_formats():
+        assert fmt.source.ad_library_ids, f"{fmt.id}: aucune pub de référence"
+        assert fmt.source.observed_on is not None, f"{fmt.id}: date d'observation manquante"
+
+
+def test_beauty_only_format_excludes_health():
+    fmt = next(f for f in load_all_formats() if f.id == "avant_apres_beaute")
+    assert fmt.fits_niche(Niche.beaute)
+    assert not fmt.fits_niche(Niche.sante_bien_etre)

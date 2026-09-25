@@ -1,0 +1,53 @@
+id: carte_produit_catalogue
+name: Carte produit catalogue
+description: >
+  Nom du produit et prix d'appel en petit texte dans un bandeau en haut, photo produit portée ou mise en
+  situation dans les deux tiers inférieurs, logo discret. Ressemble à une fiche de catalogue.
+status: draft
+
+ratios: ["9:16", "4:5"]
+objectives: [conversion]
+hook_types: [benefit, offer]
+niches_fit: [mode, tech]
+
+zones:
+  - id: product_name
+    role: headline
+    max_chars: 30
+    position: haut gauche
+  - id: price_line
+    role: subhead
+    max_chars: 30
+    position: sous le nom, ex. « à partir de 30 € »
+  - id: photo
+    role: image
+    position: bas, environ deux tiers de la hauteur
+  - id: logo
+    role: logo
+    required: false
+    position: bas centre
+
+asset_needs:
+  packshot: false
+  lifestyle: true
+  person: true
+  generated_scene_ok: true
+
+layout_notes: >
+  Bandeau supérieur clair et sobre avec typographie petite et régulière ; la photo apporte tout l'impact.
+  Un seul produit par carte. Le prix d'appel est en langage « à partir de » pour inciter au clic.
+when_to_use: >
+  Catalogue de produits similaires (t-shirts, shorts, accessoires) : une carte par référence, déclinable en série.
+when_to_avoid: >
+  Produit unique avec un argument fort : préférer spotlight_fonctionnalite ou titre_produit_en_situation.
+
+source:
+  ad_library_ids: ["1048059907776353", "1809851403316753"]
+  advertisers: [Gymshark]
+  observed_on: 2026-09-25
+  observed_running_days: 85
+  notes: >
+    Exemples « SPORT SHORTS Starting from $30 » et « THE ARRIVAL TEE Starting from $32 », visuels verticaux.
+
+tags: [catalogue, serie, prix-appel]
+score: null

@@ -1,0 +1,65 @@
+id: offre_prix_barre
+name: Offre à prix barré
+description: >
+  Produit(s) centré(s) sur fond clair et épuré. Ancien prix barré et nouveau prix en très grand, sous une
+  accroche courte. Le logo de marque est en haut, un petit bouton d'action en dessous de l'accroche.
+  Le hook est l'économie chiffrée, lisible en une seconde.
+status: draft
+
+ratios: ["9:16", "4:5"]
+objectives: [conversion]
+hook_types: [offer]
+niches_fit: []   # universel
+
+zones:
+  - id: logo
+    role: logo
+    required: true
+    position: haut centre
+  - id: headline
+    role: headline
+    max_chars: 40
+    position: haut, sous le logo
+  - id: cta
+    role: cta
+    max_chars: 15
+    required: false
+    position: sous l'accroche, petit bouton
+  - id: product
+    role: image
+    position: centre
+  - id: price_old
+    role: price
+    max_chars: 10
+    position: sous le produit, barré
+  - id: price_new
+    role: price
+    max_chars: 10
+    position: à côté de l'ancien prix, en gras et plus grand
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: false
+  generated_scene_ok: false   # le produit doit rester fidèle et net
+
+layout_notes: >
+  Fond blanc ou dégradé très clair, beaucoup d'espace. Produits centrés, hiérarchie : prix nouveau > prix barré
+  > accroche > logo. Le prix barré doit rester lisible (la comparaison est le message). Une variante observée
+  ajoute un badge rond de prix ou de promo posé sur le produit.
+when_to_use: >
+  Offre chiffrée réelle (lot, duo, remise) sur un produit déjà connu ou facile à comprendre.
+when_to_avoid: >
+  Prix de référence artificiel (prix barré jamais pratiqué) : risque légal et perte de confiance.
+
+source:
+  ad_library_ids: ["934279743051902", "29042622935340167"]
+  advertisers: [Glossier]
+  observed_on: 2026-09-25
+  observed_running_days: 45
+  notes: >
+    Pub principale diffusée depuis 45 jours (US). Structure « Save with the Glossier You Duo » : $114 barré,
+    $97 en gras.
+
+tags: [prix, promo, packshot, minimaliste]
+score: null
