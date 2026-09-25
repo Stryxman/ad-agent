@@ -1,0 +1,56 @@
+# Format d'exemple pour valider le schéma — à remplacer/compléter lors de la session de curation.
+id: temoignage_citation
+name: Témoignage en citation
+description: >
+  Grande citation client entre guillemets, note en étoiles, et le produit en visuel secondaire.
+  La preuve sociale est le hook : le texte du client porte le message.
+status: draft
+
+ratios: ["4:5", "1:1"]
+objectives: [conversion]
+hook_types: [social_proof]
+
+zones:
+  - id: stars
+    role: badge
+    required: false
+    position: haut
+  - id: quote
+    role: headline
+    max_chars: 90
+    position: centre
+  - id: author
+    role: subhead
+    max_chars: 40
+    position: sous la citation
+  - id: product
+    role: image
+    position: bas droite
+  - id: cta
+    role: cta
+    max_chars: 20
+    position: bas
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: false
+  generated_scene_ok: true
+
+layout_notes: >
+  Citation dominante (60 % de la surface utile), fond uni ou texture douce aux couleurs de la DA.
+  Produit en second plan, jamais devant le texte. CTA discret en bas.
+when_to_use: >
+  Produit avec de vrais avis clients, audience qui hésite (achat de considération).
+when_to_avoid: >
+  Produit sans avis réels : ne jamais inventer un témoignage.
+
+source:
+  ad_library_id: null
+  url: null
+  advertiser: null
+  observed_running_days: null
+  notes: Format générique, pas encore rattaché à une pub observée.
+
+tags: [preuve-sociale, texte-dominant]
+score: null

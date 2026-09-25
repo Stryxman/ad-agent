@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.env
+
+# Runs générés et assets produit (peuvent être lourds ou privés)
+outputs/*
+!outputs/.gitkeep
+assets/products/*
+!assets/products/.gitkeep
+
+# Ne jamais versionner les visuels de concurrents (droits d'auteur)
+formats/references/

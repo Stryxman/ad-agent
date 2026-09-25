@@ -1,0 +1,21 @@
+[project]
+name = "ad-agent"
+version = "0.1.0"
+description = "Agent IA qui transforme un brief en variantes d'ads statiques à partir d'une base de formats."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+ad-agent = "agent.cli:main"
+
+[tool.setuptools]
+packages = ["agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

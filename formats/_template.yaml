@@ -1,0 +1,47 @@
+# Fiche de format d'ad — copier ce fichier en <id>.yaml (les fichiers en "_" sont ignorés)
+# On documente la STRUCTURE d'un format, jamais le visuel d'un concurrent.
+
+id: nom_court_snake_case
+name: Nom lisible du format
+description: >
+  Une à deux phrases : ce qu'on voit et comment l'ad fonctionne.
+status: draft            # draft | validated (validated = testé/relu par un humain)
+
+ratios: ["4:5"]          # 1:1 | 4:5 | 9:16 | 16:9
+objectives: [conversion] # conversion | awareness | traffic | lead
+hook_types: [benefit]    # problem_solution | social_proof | offer | comparison | benefit | curiosity | before_after
+
+zones:                   # emplacements que l'agent doit remplir
+  - id: headline
+    role: headline
+    max_chars: 60
+    position: haut
+  - id: cta
+    role: cta
+    max_chars: 20
+    position: bas
+  - id: visual
+    role: image
+    required: true
+    position: centre
+
+asset_needs:
+  packshot: true
+  lifestyle: false
+  person: false
+  generated_scene_ok: true
+
+layout_notes: >
+  Description de la structure visuelle : hiérarchie, alignements, zones de respiration.
+when_to_use: ""
+when_to_avoid: ""
+
+source:                  # référence uniquement, pas de copie du visuel
+  ad_library_id: null
+  url: null
+  advertiser: null
+  observed_running_days: null   # durée de diffusion observée (indice de rentabilité)
+  notes: ""
+
+tags: []
+score: null              # renseigné plus tard avec les performances réelles

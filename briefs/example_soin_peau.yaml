@@ -1,0 +1,37 @@
+# Brief d'exemple fictif pour tester le pipeline.
+name: Sérum éclat — lancement
+objective: conversion
+
+product:
+  name: Sérum Éclat 30 ml
+  description: Sérum visage à la vitamine C, texture légère, usage quotidien.
+  benefits:
+    - Teint plus lumineux en 4 semaines d'usage régulier
+    - Texture légère, non grasse
+    - Flacon airless 30 ml
+  price: "29 €"
+
+audience: "Femmes 25-40 ans, routine soin simple, sensibles aux avis clients"
+offer: "-20 % sur la première commande"
+
+da:
+  palette: ["#F4E9DD", "#2B2B2B", "#C9A27E"]
+  fonts: ["Playfair Display", "Inter"]
+  tone: chaleureux, premium, sans jargon
+  dos: ["beaucoup d'espace", "lumière douce"]
+  donts: ["néons", "promesses médicales"]
+
+hook_idea: null
+
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims:
+  - "guérit"
+  - "résultats garantis"
+  - "avant/après sur la peau"
+
+assets:
+  - path: assets/products/serum_packshot.png
+    description: "packshot fond blanc, flacon face"
+
+variants_count: 6
