@@ -16,6 +16,15 @@ class Objective(str, Enum):
     lead = "lead"
 
 
+class Niche(str, Enum):
+    tech = "tech"
+    beaute = "beaute"
+    mode = "mode"
+    sante_bien_etre = "sante_bien_etre"
+    animaux = "animaux"
+    autre = "autre"
+
+
 class HookType(str, Enum):
     problem_solution = "problem_solution"
     social_proof = "social_proof"
@@ -60,6 +69,7 @@ class AssetRef(BaseModel):
 
 class Brief(BaseModel):
     name: str
+    niche: Niche
     objective: Objective
     product: Product
     audience: str
@@ -113,6 +123,9 @@ class AdFormat(BaseModel):
     ratios: list[str] = Field(min_length=1)
     objectives: list[Objective] = Field(min_length=1)
     hook_types: list[HookType] = Field(min_length=1)
+    niches_fit: list[Niche] = Field(
+        default_factory=list, description="Niches où le format excelle ; liste vide = universel"
+    )
     zones: list[Zone] = Field(min_length=1)
     asset_needs: AssetNeeds = Field(default_factory=AssetNeeds)
     layout_notes: str = Field(default="", description="Structure visuelle en langage naturel")
@@ -123,6 +136,10 @@ class AdFormat(BaseModel):
     score: float | None = Field(default=None, description="Performance connue (v2), None au départ")
 
     _v_ratios = field_validator("ratios")(_check_ratios)
+
+    def fits_niche(self, niche: Niche) -> bool:
+        """Universel (niches_fit vide) ou explicitement adapté à cette niche."""
+        return not self.niches_fit or niche in self.niches_fit
 
     @field_validator("zones")
     @classmethod

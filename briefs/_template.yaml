@@ -1,6 +1,7 @@
 # Brief — copier ce fichier en <nom_du_produit>.yaml
 
 name: Nom de la campagne
+niche: autre                 # tech | beaute | mode | sante_bien_etre | animaux | autre
 objective: conversion        # conversion | awareness | traffic | lead
 
 product:

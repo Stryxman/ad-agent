@@ -41,7 +41,9 @@ def cmd_validate(_: argparse.Namespace) -> int:
 
 def cmd_formats(_: argparse.Namespace) -> int:
     for f in load_all_formats(FORMATS_DIR):
-        print(f"{f.id:28} [{f.status}] ratios={','.join(f.ratios)} hooks={','.join(h.value for h in f.hook_types)}")
+        niches = ",".join(n.value for n in f.niches_fit) or "universel"
+        hooks = ",".join(h.value for h in f.hook_types)
+        print(f"{f.id:28} [{f.status}] ratios={','.join(f.ratios)} hooks={hooks} niches={niches}")
     return 0
 
 

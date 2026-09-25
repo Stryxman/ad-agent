@@ -10,6 +10,7 @@ status: draft            # draft | validated (validated = testé/relu par un hum
 ratios: ["4:5"]          # 1:1 | 4:5 | 9:16 | 16:9
 objectives: [conversion] # conversion | awareness | traffic | lead
 hook_types: [benefit]    # problem_solution | social_proof | offer | comparison | benefit | curiosity | before_after
+niches_fit: []           # tech | beaute | mode | sante_bien_etre | animaux | autre ; [] = format universel
 
 zones:                   # emplacements que l'agent doit remplir
   - id: headline

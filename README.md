@@ -32,10 +32,15 @@ pytest
   (une pub active depuis plus de 30 jours est probablement rentable).
 - `status: draft` tant qu'un format n'a pas été relu et testé ; `validated` ensuite.
 
+## Niches
+La niche est un **paramètre du brief** (`niche:`), pas une limite de l'agent. Niches gérées : `tech`, `beaute`, `mode`,
+`sante_bien_etre`, `animaux` (et `autre`). Les formats sont génériques par défaut ; `niches_fit` restreint un format
+aux niches où il excelle (liste vide = universel).
+
 ## Feuille de route
 
-- [x] Structure du projet, schémas brief et format, CLI de validation
-- [ ] **Session de curation Meta Ad Library** : constituer 15 à 30 fiches de formats (à faire avec Claude)
+- [x] Structure du projet, schémas brief et format (avec niches), CLI de validation
+- [ ] **Session de curation Meta Ad Library** : 8 à 12 fiches de formats réparties sur les 5 niches (à faire avec Claude)
 - [ ] Étapes 1, 3, 4, 5, 7, 9 avec 3 formats, sans génération d'image (boucle brief → PNG)
 - [ ] Analyse des assets, génération de scènes (Nano Banana), contrôle qualité
 - [ ] Intégration Canva (Connect API, à vérifier avec le compte Pro)

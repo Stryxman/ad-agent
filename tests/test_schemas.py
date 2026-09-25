@@ -2,7 +2,13 @@ import pytest
 from pydantic import ValidationError
 
 from agent.loader import BRIEFS_DIR, load_all_formats, load_brief
-from agent.schemas import AdFormat
+from agent.schemas import AdFormat, Niche
+
+BASE_FORMAT = {
+    "id": "x", "name": "x", "description": "x", "ratios": ["4:5"],
+    "objectives": ["conversion"], "hook_types": ["benefit"],
+    "zones": [{"id": "h", "role": "headline"}],
+}
 
 
 def test_example_brief_is_valid():
@@ -37,3 +43,19 @@ def test_duplicate_zone_ids_are_rejected():
                 "zones": [{"id": "h", "role": "headline"}, {"id": "h", "role": "cta"}],
             }
         )
+
+
+def test_format_without_niches_fit_is_universal():
+    fmt = AdFormat.model_validate(BASE_FORMAT)
+    assert all(fmt.fits_niche(n) for n in Niche)
+
+
+def test_format_with_niches_fit_is_restricted():
+    fmt = AdFormat.model_validate({**BASE_FORMAT, "niches_fit": ["mode", "beaute"]})
+    assert fmt.fits_niche(Niche.mode)
+    assert not fmt.fits_niche(Niche.tech)
+
+
+def test_unknown_niche_is_rejected():
+    with pytest.raises(ValidationError):
+        AdFormat.model_validate({**BASE_FORMAT, "niches_fit": ["crypto"]})
