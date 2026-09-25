@@ -1,6 +1,7 @@
 # Brief — copier ce fichier en <nom_du_produit>.yaml
 
 name: Nom de la campagne
+brand: ""                 # nom de marque affiché en logotype
 niche: autre                 # tech | beaute | mode | sante_bien_etre | animaux | autre
 objective: conversion        # conversion | awareness | traffic | lead
 
@@ -10,6 +11,7 @@ product:
   benefits:                  # 1 à 5 bénéfices concrets
     - ""
   price: null
+  compare_at_price: null    # ancien prix réel (format prix barré)
 
 audience: "Qui, âge, situation, problème principal"
 offer: null                  # ex. "-20 % sur la première commande"
@@ -32,3 +34,5 @@ assets:
     description: "packshot fond blanc"
 
 variants_count: 6
+
+testimonials: []             # avis clients RÉELS : [{text, author, rating}] — jamais inventés

@@ -1,0 +1,20 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--accent); color: {{ on_accent }}; justify-content: space-between; gap: calc(var(--u) * 4); }
+  h1 { font-size: calc(var(--u) * 8.6); line-height: 1.05; font-weight: 700; margin-top: calc(var(--u) * 3); }
+  .sub { font-size: calc(var(--u) * 3.8); opacity: .9; margin-top: calc(var(--u) * 2); }
+  .cta { background: {{ on_accent }}; color: var(--accent); }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <div class="brand">{{ brand }}</div>
+  <div>
+    <h1 class="display">{{ z.headline }}</h1>
+    {% if z.subhead %}<p class="sub">{{ z.subhead }}</p>{% endif %}
+  </div>
+  {{ product() }}
+  {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+</div>
+{% endblock %}

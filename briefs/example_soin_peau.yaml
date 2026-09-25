@@ -1,5 +1,6 @@
 # Brief d'exemple fictif pour tester le pipeline.
 name: Sérum éclat — lancement
+brand: Éclat
 niche: beaute
 objective: conversion
 
@@ -11,6 +12,7 @@ product:
     - Texture légère, non grasse
     - Flacon airless 30 ml
   price: "29 €"
+  compare_at_price: "36 €"
 
 audience: "Femmes 25-40 ans, routine soin simple, sensibles aux avis clients"
 offer: "-20 % sur la première commande"
@@ -36,3 +38,12 @@ assets:
     description: "packshot fond blanc, flacon face"
 
 variants_count: 6
+
+# Avis fictifs, uniquement pour tester l'exemple. Dans un vrai brief : de vrais avis clients.
+testimonials:
+  - text: "Ma routine du matin est devenue un vrai plaisir, la texture est très agréable."
+    author: "Camille, 34 ans"
+    rating: 5
+  - text: "Léger, sans effet gras, je l'utilise tous les jours."
+    author: "Sophie, 29 ans"
+    rating: 5

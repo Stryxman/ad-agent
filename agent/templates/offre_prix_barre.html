@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--bg); color: {{ on_bg }}; justify-content: space-between; gap: calc(var(--u) * 3); }
+  h1 { font-size: calc(var(--u) * 6.4); line-height: 1.1; font-weight: 600; }
+  .prices { display: flex; align-items: baseline; justify-content: center; gap: calc(var(--u) * 4); }
+  .old { font-size: calc(var(--u) * 6); text-decoration: line-through; opacity: .55; }
+  .new { font-size: calc(var(--u) * 13); font-weight: 800; color: {{ accent_text }}; line-height: 1; }
+  .cta { background: {{ on_bg }}; color: var(--bg); }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <div class="brand">{{ brand }}</div>
+  <h1 class="display">{{ z.headline }}</h1>
+  {{ product() }}
+  <div class="prices">
+    <span class="old">{{ z.price_old }}</span>
+    <span class="new">{{ z.price_new }}</span>
+  </div>
+  {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+</div>
+{% endblock %}

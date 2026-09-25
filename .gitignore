@@ -12,3 +12,6 @@ assets/products/*
 
 # Ne jamais versionner les visuels de concurrents (droits d'auteur)
 formats/references/
+
+# Config locale des outils
+.claude/

@@ -51,6 +51,7 @@ class Product(BaseModel):
     description: str
     benefits: list[str] = Field(min_length=1)
     price: str | None = None
+    compare_at_price: str | None = Field(default=None, description="Ancien prix (prix barré), si réel")
 
 
 class DA(BaseModel):
@@ -68,8 +69,17 @@ class AssetRef(BaseModel):
     description: str = ""
 
 
+class Testimonial(BaseModel):
+    """Avis client réel fourni par l'utilisateur : l'agent n'en invente jamais."""
+
+    text: str
+    author: str = ""
+    rating: int | None = Field(default=None, ge=1, le=5)
+
+
 class Brief(BaseModel):
     name: str
+    brand: str = Field(default="", description="Nom de marque affiché en logotype textuel")
     niche: Niche
     objective: Objective
     product: Product
@@ -81,6 +91,7 @@ class Brief(BaseModel):
     language: str = "fr"
     forbidden_claims: list[str] = Field(default_factory=list)
     assets: list[AssetRef] = Field(default_factory=list)
+    testimonials: list[Testimonial] = Field(default_factory=list)
     variants_count: int = Field(default=6, ge=1, le=20)
 
     _v_ratios = field_validator("ratios")(_check_ratios)
@@ -129,6 +140,10 @@ class AdFormat(BaseModel):
     niches_fit: list[Niche] = Field(
         default_factory=list, description="Niches où le format excelle ; liste vide = universel"
     )
+    requires: list[str] = Field(
+        default_factory=list,
+        description="Champs du brief à renseigner pour utiliser ce format (chemin pointé, ex. product.compare_at_price)",
+    )
     zones: list[Zone] = Field(min_length=1)
     asset_needs: AssetNeeds = Field(default_factory=AssetNeeds)
     layout_notes: str = Field(default="", description="Structure visuelle en langage naturel")
@@ -152,3 +167,39 @@ class AdFormat(BaseModel):
         if dupes:
             raise ValueError(f"ids de zones dupliqués: {sorted(dupes)}")
         return zones
+
+
+# ------------------------------------------------------------- artefacts du pipeline
+
+
+class Angle(BaseModel):
+    id: str
+    hook_type: HookType
+    hooks: list[str] = Field(min_length=1)
+    rationale: str = ""
+
+
+class Variant(BaseModel):
+    id: str
+    angle_id: str
+    format_id: str
+    ratios: list[str]
+    hook: str
+    score: float
+    rationale: str = ""
+
+
+class SkippedFormat(BaseModel):
+    format_id: str
+    reason: str
+
+
+class VariantPlan(BaseModel):
+    variants: list[Variant]
+    skipped: list[SkippedFormat] = Field(default_factory=list)
+
+
+class VariantCopy(BaseModel):
+    variant_id: str
+    zones: dict[str, str]
+    warnings: list[str] = Field(default_factory=list)

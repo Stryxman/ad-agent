@@ -10,6 +10,7 @@ ratios: ["4:5", "1:1"]
 objectives: [conversion]
 hook_types: [social_proof]
 niches_fit: []   # universel
+requires: [testimonials]
 
 zones:
   - id: title

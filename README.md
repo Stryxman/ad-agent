@@ -24,7 +24,11 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate     # valide briefs et formats
 pytest
+ad-agent run briefs/example_soin_peau.yaml --no-png   # génère un run dans outputs/ (HTML)
 ```
+
+Pour les captures PNG : `pip install -e ".[render]"` puis `playwright install chromium` (ou `firefox`, `webkit`), et lancer sans `--no-png`
+(`--browser firefox` pour choisir le moteur).
 
 ## Règles de la base de formats
 - On documente la **structure** d'un format (zones, hiérarchie, hooks adaptés), jamais le visuel d'un concurrent.
@@ -42,7 +46,8 @@ aux niches où il excelle (liste vide = universel).
 - [x] Structure du projet, schémas brief et format (avec niches), CLI de validation
 - [x] Première curation Meta Ad Library (US) : 8 fiches `draft`, protocole dans [docs/curation.md](docs/curation.md)
 - [ ] Compléter la base : comparatif, callouts, faux pop-up d'avis, formats bien-être
-- [ ] Étapes 1, 3, 4, 5, 7, 9 avec 3 formats, sans génération d'image (boucle brief → PNG)
+- [x] Boucle brief → variantes → HTML avec 3 formats, rédacteur hors ligne (PNG via Playwright, à installer)
+- [ ] Rédacteur Claude (angles et textes) branché sur l'interface `Writer`
 - [ ] Analyse des assets, génération de scènes (Nano Banana), contrôle qualité
 - [ ] Intégration Canva (Connect API, à vérifier avec le compte Pro)
 - [ ] Retour terrain : scores de formats selon les performances réelles

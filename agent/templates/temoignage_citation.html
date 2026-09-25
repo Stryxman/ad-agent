@@ -1,0 +1,28 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--bg); color: {{ on_bg }}; justify-content: space-between; gap: calc(var(--u) * 4); }
+  .stars { color: {{ accent_text }}; font-size: calc(var(--u) * 6); letter-spacing: .12em; }
+  .title { font-size: calc(var(--u) * 4.4); text-transform: uppercase; letter-spacing: .12em; opacity: .7; }
+  blockquote { font-size: calc(var(--u) * 6.6); line-height: 1.25; font-style: italic; }
+  blockquote::before { content: "« "; color: {{ accent_text }}; }
+  blockquote::after { content: " »"; color: {{ accent_text }}; }
+  .author { font-size: calc(var(--u) * 3.8); opacity: .75; margin-top: calc(var(--u) * 3); }
+  .mid { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--u) * 3); }
+  .stage { flex: 0 0 26%; }
+  .cta { background: var(--accent); color: {{ on_accent }}; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <div class="brand">{{ brand }}</div>
+  <div class="mid">
+    {% if z.title %}<div class="title">{{ z.title }}</div>{% endif %}
+    {% if z.stars %}<div class="stars">{{ z.stars }}</div>{% endif %}
+    <blockquote class="display">{{ z.quote }}</blockquote>
+    {% if z.author %}<div class="author">{{ z.author }}</div>{% endif %}
+  </div>
+  {{ product() }}
+  {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+</div>
+{% endblock %}

@@ -12,6 +12,8 @@ objectives: [conversion] # conversion | awareness | traffic | lead
 hook_types: [benefit]    # problem_solution | social_proof | offer | comparison | benefit | curiosity | before_after
 niches_fit: []           # tech | beaute | mode | sante_bien_etre | animaux | autre ; [] = format universel
 
+requires: []             # champs du brief exigés, ex. [product.compare_at_price, testimonials]
+
 zones:                   # emplacements que l'agent doit remplir
   - id: headline
     role: headline
