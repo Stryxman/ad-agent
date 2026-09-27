@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block style %}
 <style>
-  .canvas { background: var(--bg); color: {{ on_bg }}; align-items: stretch; text-align: left; gap: calc(var(--u) * 4); }
+  .canvas { background: {{ bg_surface_css }}; color: {{ on_bg }}; align-items: stretch; text-align: left; gap: calc(var(--u) * 4); }
   h1 { font-size: calc(var(--u) * 6); line-height: 1.2; text-align: left; }
   .rows { display: flex; flex-direction: column; gap: calc(var(--u) * 3); flex: 1; }
   .row { display: flex; align-items: flex-start; gap: calc(var(--u) * 2.4); }

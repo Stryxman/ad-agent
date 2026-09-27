@@ -77,7 +77,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         else:
             writer = OfflineWriter()
         run_dir = run(Path(args.brief), writer=writer, out_root=Path(args.out) if args.out else OUTPUTS_DIR,
-                      render_png=not args.no_png, browser=args.browser)
+                      render_png=not args.no_png, browser=args.browser, fond=args.fond)
     except WriterError as e:
         print(f"ERREUR du rédacteur : {e}", file=sys.stderr)
         return 1
@@ -107,6 +107,8 @@ def main(argv: list[str] | None = None) -> int:
     run_p.add_argument("--model", help="modèle Claude (défaut : variable AD_AGENT_MODEL ou claude-opus-5)")
     run_p.add_argument("--browser", choices=BROWSERS, default="chromium",
                        help="moteur de rendu des PNG (défaut : chromium)")
+    run_p.add_argument("--fond", choices=("auto", "lineaire", "mesh", "uni"), default="auto",
+                       help="traitement de fond (défaut : auto = DA du brief, sinon celui de chaque format)")
     run_p.set_defaults(func=cmd_run)
     args = parser.parse_args(argv)
     return args.func(args)

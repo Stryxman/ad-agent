@@ -14,7 +14,8 @@ from pydantic import BaseModel
 
 from agent.assets import ensure_isolated
 from agent.loader import ROOT, load_all_formats, load_brief
-from agent.render import available_templates, render_html, screenshot_all
+from agent.backgrounds import make_look, resolve_kind
+from agent.render import available_templates, palette_of, render_html, screenshot_all
 from agent.schemas import (
     AdFormat, Angle, AssetAnalysis, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
 )
@@ -206,7 +207,8 @@ def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[Varia
 
 
 def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS_DIR,
-        render_png: bool = True, browser: str = "chromium") -> Path:
+        render_png: bool = True, browser: str = "chromium", fond: str | None = None,
+        safe_overlay: bool = False) -> Path:
     writer = writer or OfflineWriter()
     run_dir = out_root / f"run_{datetime.now():%Y%m%d_%H%M%S}"
     (run_dir / "renders").mkdir(parents=True)
@@ -256,6 +258,14 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     except WriterError:
         shutil.rmtree(run_dir, ignore_errors=True)
         raise
+
+    # 6. fond de chaque variante : option CLI > DA du brief > défaut du format
+    bg, fg, accent = palette_of(brief)
+    looks = {}
+    for v in plan.variants:
+        looks[v.id] = make_look(resolve_kind(fond, brief.da.fond, formats[v.format_id].fond), bg, fg, accent)
+    for c in copies:
+        c.warnings.extend(looks[c.variant_id].warnings)
     _dump(run_dir / "copy.json", [c.model_dump(mode="json") for c in copies])
 
     # 7. rendu HTML puis PNG, un fichier par ratio
@@ -266,7 +276,8 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         rendered[v.id] = {}
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
-                                    run_dir / "renders", product_image, scene_image, before_image, after_image)
+                                    run_dir / "renders", product_image, scene_image, before_image, after_image,
+                                    look=looks[v.id], safe_overlay=safe_overlay)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
     if render_png and jobs:
@@ -277,7 +288,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     manifest = {
         "brief": brief.name, "writer": writer.name, "usage": getattr(writer, "usage", None), "created_at": datetime.now().isoformat(timespec="seconds"),
         "variants": [
-            {**v.model_dump(mode="json"), "copy": copy_by_id[v.id].zones,
+            {**v.model_dump(mode="json"), "fond": looks[v.id].kind, "copy": copy_by_id[v.id].zones,
              "warnings": copy_by_id[v.id].warnings, "files": rendered[v.id]}
             for v in plan.variants
         ],

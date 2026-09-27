@@ -1,7 +1,7 @@
 {% extends "_base.html" %}
 {% block style %}
 <style>
-  .canvas { background: var(--bg); color: {{ on_bg }}; justify-content: space-between; gap: calc(var(--u) * 4); }
+  .canvas { background: {{ bg_surface_css }}; color: {{ on_bg }}; justify-content: space-between; gap: calc(var(--u) * 4); }
   .stars { color: {{ accent_text }}; font-size: calc(var(--u) * 6); letter-spacing: .12em; }
   .title { font-size: calc(var(--u) * 4.4); text-transform: uppercase; letter-spacing: .12em; opacity: .7; }
   blockquote { font-size: calc(var(--u) * 6.6); line-height: 1.25; font-style: italic; }

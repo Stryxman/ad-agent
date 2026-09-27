@@ -9,7 +9,9 @@ from functools import lru_cache
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from markupsafe import Markup
 
+from agent.backgrounds import Look, make_look
 from agent.colors import contrast_color, contrast_ratio, readable_on  # réexportés (tests, gabarits)
 from agent.schemas import AdFormat, Brief, Variant
 
@@ -36,18 +38,29 @@ def _data_uri(path: Path) -> str | None:
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
 
 
-def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, product_image: Path | None,
-            scene_image: Path | None, before_image: Path | None = None, after_image: Path | None = None) -> dict:
-    w, h = RATIO_SIZES[ratio]
+def palette_of(brief: Brief) -> tuple[str, str, str]:
+    """(fond, texte, accent) du brief, complétés par la palette par défaut si le brief en donne moins de 3."""
     palette = list(brief.da.palette) + DEFAULT_PALETTE[len(brief.da.palette):]
-    bg, fg, accent = palette[0], palette[1], palette[2]
+    return palette[0], palette[1], palette[2]
+
+
+def _context(fmt: AdFormat, zones: dict, brief: Brief, ratio: str, product_image: Path | None,
+             scene_image: Path | None, before_image: Path | None, after_image: Path | None,
+             look: Look | None, font_head: str, safe_overlay: bool) -> dict:
+    w, h = RATIO_SIZES[ratio]
+    bg, fg, accent = palette_of(brief)
+    look = look or make_look(fmt.fond, bg, fg, accent)
     fonts = brief.da.fonts
     return {
         "w": w, "h": h, "u": w / 100, "ratio": ratio, "fmt_id": fmt.id,
-        "bg": bg, "fg": fg, "accent": accent,
-        "on_bg": contrast_color(bg), "on_accent": contrast_color(accent),
-        "accent_text": readable_on(accent, bg),
+        "bg": bg, "fg": fg, "accent": accent, "fond": look.kind,
+        # surfaces calculées (fond et accent) et textes lisibles sur chacune de leurs couleurs
+        "bg_surface_css": look.bg.css, "accent_surface_css": look.accent.css,
+        "on_bg": look.on_bg, "on_accent_surface": look.on_accent_surface, "accent_text": look.accent_text,
+        # blocs posés sur une couleur pure de la palette
+        "on_accent": contrast_color(accent), "on_fg": contrast_color(fg),
         "font_display": fonts[0] if fonts else "Georgia", "font_body": fonts[1] if len(fonts) > 1 else "Helvetica",
+        "font_head": Markup(font_head), "safe_overlay": safe_overlay,
         "brand": brief.brand or brief.product.name, "product_name": brief.product.name,
         # produit détouré (fond uni/dégradé) vs. photo d'origine (scène plein cadre, fond conservé)
         "product_img": _data_uri(product_image) if product_image else None,
@@ -59,11 +72,13 @@ def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, pro
     }
 
 
-def render_html(variant: Variant, fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, out_dir: Path,
+def render_html(variant: Variant, fmt: AdFormat, zones: dict, brief: Brief, ratio: str, out_dir: Path,
                 product_image: Path | None = None, scene_image: Path | None = None,
-                before_image: Path | None = None, after_image: Path | None = None) -> Path:
+                before_image: Path | None = None, after_image: Path | None = None, *,
+                look: Look | None = None, font_head: str = "", safe_overlay: bool = False) -> Path:
     html = _env.get_template(f"{fmt.id}.html").render(
-        **_context(fmt, zones, brief, ratio, product_image, scene_image, before_image, after_image)
+        **_context(fmt, zones, brief, ratio, product_image, scene_image, before_image, after_image,
+                   look, font_head, safe_overlay)
     )
     path = out_dir / f"{variant.id}_{fmt.id}_{ratio.replace(':', 'x')}.html"
     path.write_text(html, encoding="utf-8")

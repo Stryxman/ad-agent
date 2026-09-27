@@ -71,3 +71,17 @@ def test_beauty_only_format_excludes_health():
     fmt = next(f for f in load_all_formats() if f.id == "avant_apres_beaute")
     assert fmt.fits_niche(Niche.beaute)
     assert not fmt.fits_niche(Niche.sante_bien_etre)
+
+
+@pytest.mark.parametrize("bad", ["red", "#12", "#GGGGGG", "12131A"])
+def test_palette_rejects_non_hex_colours(bad):
+    from agent.schemas import DA
+
+    with pytest.raises(ValidationError, match="hexadécimale"):
+        DA(palette=["#FFFFFF", bad], tone="x")
+
+
+def test_da_fond_defaults_to_auto():
+    from agent.schemas import DA
+
+    assert DA(palette=["#FFF"], tone="x").fond == "auto"
