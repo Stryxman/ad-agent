@@ -103,10 +103,14 @@ aux niches où il excelle (liste vide = universel).
 
 ## Prochaines étapes (pas commencées, choix assumés)
 
+Point de reprise détaillé (outils installés, comment les utiliser, ordre des étapes) :
+[docs/session-recap.md](docs/session-recap.md).
+
 - **Finition dans Canva** : Canva n'expose pas son détourage/sa génération d'image via son API pour
   développeurs (vérifié directement sur sa documentation), seulement dans son éditeur. L'usage prévu est
   donc une étape manuelle de finition après notre pipeline : pousser une variante dans un gabarit Canva
-  (Autofill API, nécessite un compte Pro) pour l'ajuster visuellement avant publication.
+  (Autofill API, nécessite un compte Pro) pour l'ajuster visuellement avant publication. Le connecteur
+  Canva est maintenant installé côté compte — voir `session-recap.md` pour le détail d'usage.
 - **Génération de scènes (Nano Banana / Gemini)** : mettrait le produit détouré en situation plutôt que sur
   un simple fond de couleur. Volontairement pas construit pour l'instant : ce serait un second fournisseur
   d'IA (nouvelle clé, nouveau SDK, nouveaux coûts) pour un besoin déjà partiellement couvert par la finition
