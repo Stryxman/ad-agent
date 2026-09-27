@@ -10,6 +10,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from agent.colors import contrast_color, contrast_ratio, readable_on  # réexportés (tests, gabarits)
 from agent.schemas import AdFormat, Brief, Variant
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -23,36 +24,6 @@ _env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_aut
 def available_templates() -> set[str]:
     """Les formats qui ont un gabarit de rendu (fichiers `<format_id>.html`, hors `_base.html`)."""
     return {p.stem for p in TEMPLATES_DIR.glob("*.html") if not p.name.startswith("_")}
-
-
-def contrast_color(hex_color: str) -> str:
-    """Noir ou blanc, selon la luminosité du fond, pour garder un texte lisible."""
-    h = hex_color.lstrip("#")
-    if len(h) == 3:
-        h = "".join(c * 2 for c in h)
-    r, g, b = (int(h[i:i + 2], 16) for i in (0, 2, 4))
-    return "#111111" if (0.299 * r + 0.587 * g + 0.114 * b) > 150 else "#FFFFFF"
-
-
-def _luminance(hex_color: str) -> float:
-    h = hex_color.lstrip("#")
-    if len(h) == 3:
-        h = "".join(c * 2 for c in h)
-    chan = []
-    for i in (0, 2, 4):
-        c = int(h[i:i + 2], 16) / 255
-        chan.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
-    return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2]
-
-
-def contrast_ratio(a: str, b: str) -> float:
-    la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
-    return (la + 0.05) / (lb + 0.05)
-
-
-def readable_on(color: str, bg: str, min_ratio: float = 3.0) -> str:
-    """La couleur telle quelle si elle reste lisible sur ce fond (WCAG, texte large), sinon noir/blanc."""
-    return color if contrast_ratio(color, bg) >= min_ratio else contrast_color(bg)
 
 
 @lru_cache(maxsize=256)
