@@ -277,3 +277,34 @@ def test_run_produces_all_artifacts_and_respects_zone_limits(tmp_path):
             assert "<html" in html
             for text in v["copy"].values():
                 assert str(escape(text)) in html, (v["id"], text)
+
+
+def test_capture_sizes_follow_meta_recommendation():
+    from agent.render import capture_size
+
+    assert capture_size("4:5") == (1440, 1800)
+    assert capture_size("1:1") == (1440, 1440)
+    assert capture_size("9:16") == (1440, 2560)
+
+
+def test_safe_zones_by_ratio():
+    from agent.render import safe_zone_px
+
+    assert safe_zone_px("9:16") == (268.8, 64.8, 672.0, 64.8)
+    assert safe_zone_px("4:5") == (75.6, 75.6, 75.6, 75.6)
+
+
+def test_safe_zone_variables_and_overlay_in_html(tmp_path):
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "offre_prix_barre")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["9:16"], hook="x", score=1.0, rationale="r")
+    zones = {"headline": "Titre", "price_old": "39 €", "price_new": "29 €"}
+    html = render_html(variant, fmt, zones, brief, "9:16", tmp_path).read_text(encoding="utf-8")
+    assert "--safe-bottom: 672.0px" in html and 'class="safe-ov"' not in html
+    ctrl = render_html(variant, fmt, zones, brief, "9:16", tmp_path, safe_overlay=True).read_text(encoding="utf-8")
+    assert 'class="safe-ov"' in ctrl
+
+
+def test_control_run_is_flagged_in_review(tmp_path):
+    run_dir = run(EXAMPLE, out_root=tmp_path, render_png=False, safe_overlay=True)
+    assert "ne pas publier" in (run_dir / "review.md").read_text(encoding="utf-8")

@@ -19,6 +19,10 @@ TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
 RATIO_SIZES = {"1:1": (1080, 1080), "4:5": (1080, 1350), "9:16": (1080, 1920), "16:9": (1920, 1080)}
 DEFAULT_PALETTE = ["#F4F1EC", "#222222", "#B08D6E"]
+SCALE = 4 / 3  # mise en page sur 1080 px de large, capturée en 1440 px (Meta : 1440 x 1800 en 4:5)
+# haut/bas en fraction de la hauteur, côtés en fraction de la largeur ; voir docs/regles-et-design.md
+SAFE_ZONES = {"9:16": (0.14, 0.06, 0.35, 0.06)}
+DEFAULT_SAFE = 0.07  # fraction de la largeur, sur les 4 bords (valeur historique des gabarits)
 
 _env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_autoescape(["html"]))
 
@@ -36,6 +40,21 @@ def _data_uri(path: Path) -> str | None:
         return None
     mime = mimetypes.guess_type(path.name)[0] or "image/png"
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
+
+
+def capture_size(ratio: str) -> tuple[int, int]:
+    w, h = RATIO_SIZES[ratio]
+    return round(w * SCALE), round(h * SCALE)
+
+
+def safe_zone_px(ratio: str) -> tuple[float, float, float, float]:
+    """Marges (haut, droite, bas, gauche) en px de mise en page, où ne doivent aller ni texte ni logo."""
+    w, h = RATIO_SIZES[ratio]
+    if ratio in SAFE_ZONES:
+        top, right, bottom, left = SAFE_ZONES[ratio]
+        return round(top * h, 1), round(right * w, 1), round(bottom * h, 1), round(left * w, 1)
+    m = round(DEFAULT_SAFE * w, 1)
+    return m, m, m, m
 
 
 def palette_of(brief: Brief) -> tuple[str, str, str]:
@@ -60,7 +79,7 @@ def _context(fmt: AdFormat, zones: dict, brief: Brief, ratio: str, product_image
         # blocs posés sur une couleur pure de la palette
         "on_accent": contrast_color(accent), "on_fg": contrast_color(fg),
         "font_display": fonts[0] if fonts else "Georgia", "font_body": fonts[1] if len(fonts) > 1 else "Helvetica",
-        "font_head": Markup(font_head), "safe_overlay": safe_overlay,
+        "font_head": Markup(font_head), "safe_overlay": safe_overlay, "safe": safe_zone_px(ratio),
         "brand": brief.brand or brief.product.name, "product_name": brief.product.name,
         # produit détouré (fond uni/dégradé) vs. photo d'origine (scène plein cadre, fond conservé)
         "product_img": _data_uri(product_image) if product_image else None,
@@ -103,7 +122,7 @@ def screenshot_all(jobs: list[tuple[str, str, Path]], browser_name: str = "chrom
             browser = getattr(p, browser_name).launch()
             for variant_id, ratio, html_path in jobs:
                 w, h = RATIO_SIZES[ratio]
-                page = browser.new_page(viewport={"width": w, "height": h})
+                page = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=SCALE)
                 page.goto(html_path.resolve().as_uri())
                 png = html_path.with_suffix(".png")
                 page.screenshot(path=str(png))

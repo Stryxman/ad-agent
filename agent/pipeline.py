@@ -178,10 +178,12 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
 
 
 def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[VariantCopy],
-                 formats: dict[str, AdFormat], rendered: dict[str, dict[str, dict[str, str]]]) -> None:
+                 formats: dict[str, AdFormat], rendered: dict[str, dict[str, dict[str, str]]],
+                 notes: list[str] = ()) -> None:
     lines = [f"# Revue du run — {brief.name}", "",
              f"Niche : {brief.niche.value} · Objectif : {brief.objective.value} · "
              f"{len(plan.variants)} variante(s)", ""]
+    lines += [f"> {n}" for n in notes] + ([""] if notes else [])
     by_id = {c.variant_id: c for c in copies}
     for v in plan.variants:
         fmt = formats[v.format_id]
@@ -269,6 +271,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     _dump(run_dir / "copy.json", [c.model_dump(mode="json") for c in copies])
 
     # 7. rendu HTML puis PNG, un fichier par ratio
+    notes = ["Rendu de contrôle des zones de sécurité : ne pas publier."] if safe_overlay else []
     copy_by_id = {c.variant_id: c for c in copies}
     rendered: dict[str, dict[str, dict[str, str]]] = {}
     jobs: list[tuple[str, str, Path]] = []
@@ -295,5 +298,5 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         "skipped_formats": [s.model_dump(mode="json") for s in plan.skipped],
     }
     _dump(run_dir / "manifest.json", manifest)
-    write_review(run_dir / "review.md", brief, plan, copies, formats, rendered)
+    write_review(run_dir / "review.md", brief, plan, copies, formats, rendered, notes)
     return run_dir
