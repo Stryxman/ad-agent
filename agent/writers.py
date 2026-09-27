@@ -11,7 +11,8 @@ import re
 from typing import Protocol
 
 from agent.checks import normalize  # réexporté (pipeline, rédacteur Claude)
-from agent.schemas import Angle, AdFormat, Brief, HookType, Zone
+from agent.publication import offline_publication
+from agent.schemas import Angle, AdFormat, Brief, HookType, PublicationCopy, Zone
 
 CTA = {
     "fr": {"default": "Découvrir", "offer": "J'en profite"},
@@ -42,6 +43,10 @@ class Writer(Protocol):
 
     def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
         """Renvoie les textes par zone et la liste des avertissements."""
+        ...
+
+    def write_publication(self, brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
+        """Textes principaux et titres pour Ads Manager, avec leurs avertissements."""
         ...
 
 
@@ -89,6 +94,9 @@ class OfflineWriter:
             if text:
                 zones[z.id] = fit_text(text, z.max_chars)
         return zones, []
+
+    def write_publication(self, brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
+        return offline_publication(brief, hook)
 
     @staticmethod
     def _zone_text(brief: Brief, hook: str, testimonial, zone: Zone, lang: dict[str, str]) -> str | None:

@@ -171,7 +171,9 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
                 warnings.append(f"zone « {z.id} » tronquée à {z.max_chars} caractères")
             if z.required and z.role not in ("image", "logo") and not zones.get(z.id):
                 warnings.append(f"zone obligatoire « {z.id} » sans contenu")
-        result.append(VariantCopy(variant_id=v.id, zones=zones, warnings=warnings))
+        publication, pub_warnings = writer.write_publication(brief, v.hook)
+        result.append(VariantCopy(variant_id=v.id, zones=zones, publication=publication,
+                                  warnings=warnings + pub_warnings))
     return result
 
 
@@ -196,6 +198,11 @@ def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[Varia
         for zid, text in by_id[v.id].zones.items():
             shown = " ; ".join(text) if isinstance(text, list) else text
             lines.append(f"- {zid} : {shown}")
+        pub = by_id[v.id].publication
+        if pub.headlines or pub.primary_texts:
+            lines.append("- Textes de publication :")
+            lines += [f"  - Titre ({len(t)} car.) : {t}" for t in pub.headlines]
+            lines += [f"  - Texte principal ({len(t)} car.) : {t}" for t in pub.primary_texts]
         for w in by_id[v.id].warnings:
             lines.append(f"- ⚠ {w}")
         lines.append("")
@@ -304,6 +311,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         "brief": brief.name, "writer": writer.name, "usage": getattr(writer, "usage", None), "created_at": datetime.now().isoformat(timespec="seconds"),
         "variants": [
             {**v.model_dump(mode="json"), "fond": looks[v.id].kind, "copy": copy_by_id[v.id].zones,
+             "publication": copy_by_id[v.id].publication.model_dump(),
              "warnings": copy_by_id[v.id].warnings, "files": rendered[v.id]}
             for v in plan.variants
         ],

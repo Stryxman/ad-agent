@@ -232,7 +232,15 @@ class VariantPlan(BaseModel):
     skipped: list[SkippedFormat] = Field(default_factory=list)
 
 
+class PublicationCopy(BaseModel):
+    """Textes saisis dans Ads Manager à côté du visuel (hors de l'image)."""
+
+    primary_texts: list[str] = Field(default_factory=list)
+    headlines: list[str] = Field(default_factory=list)
+
+
 class VariantCopy(BaseModel):
     variant_id: str
     zones: dict[str, str | list[str]]  # str pour une zone normale, list[str] pour une zone role="list"
+    publication: PublicationCopy = Field(default_factory=PublicationCopy)
     warnings: list[str] = Field(default_factory=list)
