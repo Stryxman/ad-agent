@@ -1,0 +1,38 @@
+# Brief de démonstration (README) : image libre de droits, non versionnée (assets/products/ est ignoré).
+# Marque et produit fictifs, sans direction créative imposée : l'agent choisit angles et formats.
+name: Casque sans fil — conversion
+brand: Onda
+niche: tech
+objective: conversion
+
+product:
+  name: Onda Studio
+  description: Casque sans fil circum-auriculaire, coussinets à mémoire de forme, 40 h d'autonomie.
+  benefits:
+    - 40 h d'autonomie
+    - Coussinets à mémoire de forme
+    - Pliable pour le voyage
+  price: "129 €"
+  compare_at_price: null
+
+audience: "Joueurs et télétravailleurs 18-35 ans qui portent un casque plusieurs heures par jour"
+offer: "Livraison offerte"
+
+da:
+  palette: ["#F2F2F0", "#111111", "#D7263D"]
+  fonts: ["Archivo Black", "Archivo"]
+  tone: sobre, affirmé, premium
+  dos: ["contraste fort", "une idée par visuel"]
+  donts: ["superlatifs vagues"]
+
+hook_idea: null
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims: []
+
+assets:
+  - path: assets/products/casque_fond_blanc.jpg
+    description: "casque noir vu de dessus sur fond blanc (déjà isolé)"
+
+testimonials: []
+variants_count: 4

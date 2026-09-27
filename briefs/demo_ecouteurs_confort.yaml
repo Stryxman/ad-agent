@@ -1,0 +1,38 @@
+# Brief de démonstration (README) : image libre de droits, non versionnée (assets/products/ est ignoré).
+# Marque et produit fictifs, sans direction créative imposée : l'agent choisit angles et formats.
+name: Écouteurs confort — notoriété
+brand: Aura
+niche: tech
+objective: awareness
+
+product:
+  name: Aura One
+  description: Écouteurs légers pensés pour être portés toute la journée, au bureau comme dans les transports.
+  benefits:
+    - Légers au point de les oublier
+    - Appels clairs grâce à deux micros
+    - Passage d'un appareil à l'autre sans réglage
+  price: "89 €"
+  compare_at_price: null
+
+audience: "Actifs 25-40 ans en télétravail ou en open space, enchaînent les appels et la musique"
+offer: null
+
+da:
+  palette: ["#F3EEE8", "#2A2623", "#7C9A92"]
+  fonts: ["DM Serif Display", "DM Sans"]
+  tone: calme, posé, rassurant
+  dos: ["beaucoup d'espace", "lumière douce"]
+  donts: ["promesses de santé"]
+
+hook_idea: null
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims: ["protège l'audition", "soigne", "sans fatigue"]
+
+assets:
+  - path: assets/products/ecouteurs_porte.jpg
+    description: "homme portant un écouteur blanc, portrait lumineux"
+
+testimonials: []
+variants_count: 4

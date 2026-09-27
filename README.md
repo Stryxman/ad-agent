@@ -4,7 +4,11 @@ Un agent IA qui transforme un **brief** (objectif, direction artistique, hook, p
 **variantes d'ads statiques**, en s'appuyant sur une base de formats construite à partir de vraies publicités
 observées sur Meta Ad Library. Chaque variante est un vrai fichier PNG, prêt à publier ou à retoucher.
 
-![Exemple de rendu](docs/screenshots/example.png)
+![Six variantes générées par l'agent](docs/screenshots/demo.png)
+
+*Rendus réels de l'agent (rédacteur Claude, rendu Firefox) pour trois produits fictifs, à partir d'une photo
+libre de droits chacun et d'un brief sans direction créative : 5 formats différents choisis par l'agent,
+fonds et polices tirés de la DA. Briefs : [`briefs/demo_*.yaml`](briefs/).*
 
 ## Pourquoi ce projet
 
@@ -17,9 +21,9 @@ seulement un prototype :
   promesses interdites, chiffres inventés) avant d'être utilisé ; les prix, les avis et les faits ne passent
   jamais par le modèle.
 - Un **traitement d'image raisonné, pas juste branché** : le détourage automatique n'est déclenché que si
-  l'image ne l'est pas déjà, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
+  l'image n'a pas déjà un fond transparent, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
   évité de justesse un modèle par défaut sous licence non commerciale.
-- **Tout est testé** : 102 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
+- **Tout est testé** : 101 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
   détourage, vrais rendus PNG) à chaque étape ajoutée.
 
 ## Comment ça marche
@@ -43,7 +47,7 @@ Le détail de chaque étape, avec le format exact de ses fichiers de sortie, est
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate                                      # valide briefs et formats
-pytest                                                  # 102 tests
+pytest                                                  # 101 tests
 ad-agent run briefs/example_soin_peau.yaml --no-png     # génère un run dans outputs/ (HTML)
 ```
 
@@ -70,6 +74,17 @@ Le modèle est figé explicitement sur `u2net` (Apache 2.0, réutilisable commer
 de la bibliothèque `rembg` a changé vers un modèle de ~1 Go sous licence non commerciale, détecté et évité
 pendant le développement (voir [docs/pipeline.md](docs/pipeline.md#le-détourage-automatique-agentassetspy)).
 
+## Textes de publication (exemple réel)
+
+Pour la variante « Le Trek 24 L à 89 € » ci-dessus, l'agent produit aussi les textes à saisir dans Ads Manager,
+revérifiés par le code (longueur, promesses interdites, chiffres présents dans le brief) :
+
+| Titres (≤ 27 caractères) | Textes principaux (≤ 150 caractères) |
+|---|---|
+| -30 € jusqu'à dimanche | Toile de laine et cuir : le Trek 24 L passe à 89 € au lieu de 119 €, jusqu'à dimanche. |
+| Trek 24 L à 89 € | 24 litres, compartiment ordinateur : du bureau au sentier. -30 € jusqu'à dimanche. |
+| Laine et cuir, 89 € | Des matières qui durent, un sac qui suit. Fjelda Trek 24 L à 89 € jusqu'à dimanche. |
+
 ## Structure
 
 ```
@@ -79,7 +94,7 @@ agent/       schémas, chargement, rédacteurs (hors ligne / Claude), rendu, CLI
 assets/      images produit (non versionnées)
 outputs/     runs générés (non versionnés)
 docs/        pipeline détaillé, protocole de curation, règles Meta et design, specs
-tests/       102 tests
+tests/       101 tests
 ```
 
 ## Règles de la base de formats
@@ -103,7 +118,7 @@ aux niches où il excelle (liste vide = universel).
 - [x] Rendu soigné et conforme Meta : fonds en dégradé calculés depuis la palette, vraies polices de la DA,
   1440 × 1800 en 4:5, zones de sécurité en 9:16 ([règles et sources](docs/regles-et-design.md))
 - [x] Textes de publication prêts pour Ads Manager (titres ≤ 27 caractères, textes principaux ≤ 150)
-- [x] 102 tests, plusieurs vérifications en conditions réelles
+- [x] 101 tests, plusieurs vérifications en conditions réelles
 - [x] Passe de revue sur `agent/` (8 constats corrigés : texte illisible sur fond accent, chemins
   d'assets non confinés à la racine du projet, incohérences produit/scène, etc.)
 
@@ -133,6 +148,9 @@ aux niches où il excelle (liste vide = universel).
   une image réutilisée deux fois (aucune vraie photo avant/après libre de droits trouvée pendant le
   développement). À valider avec de vraies photos consenties.
 - **Retour terrain** : mise à jour du score des formats selon les performances réelles observées.
+- **Limites vues sur le test réel** : le détourage (`u2net`) garde les zones de fond enfermées par l'objet
+  (intérieur de l'arceau d'un casque) ; l'illustration de `infographie_probleme` reste petite ; sans photo de
+  scène, le nom du produit peut chevaucher le titre de `titre_produit_en_situation`.
 
 ## Licence
 

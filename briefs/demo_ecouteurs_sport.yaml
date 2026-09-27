@@ -1,0 +1,38 @@
+# Brief de démonstration (README) : image libre de droits, non versionnée (assets/products/ est ignoré).
+# Marque et produit fictifs, sans direction créative imposée : l'agent choisit angles et formats.
+name: Écouteurs sport — lancement
+brand: Volta
+niche: tech
+objective: conversion
+
+product:
+  name: Volta Free
+  description: Écouteurs sans fil compacts, tenue stable, 24 h d'autonomie avec le boîtier.
+  benefits:
+    - Tiennent en place pendant la course
+    - 24 h d'autonomie avec le boîtier
+    - Appairage automatique à l'ouverture du boîtier
+  price: "49 €"
+  compare_at_price: "69 €"
+
+audience: "Coureurs et sportifs urbains 20-35 ans, veulent des écouteurs qui ne tombent pas"
+offer: "-20 € pour le lancement"
+
+da:
+  palette: ["#1C1F24", "#F4F1EA", "#E8B04B"]
+  fonts: ["Space Grotesk", "Inter"]
+  tone: énergique, direct, concret
+  dos: ["verbes d'action", "phrases courtes"]
+  donts: ["jargon technique"]
+
+hook_idea: null
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims: ["étanche"]
+
+assets:
+  - path: assets/products/ecouteurs_main.jpg
+    description: "écouteurs en lévitation au-dessus d'une main, fond flou"
+
+testimonials: []
+variants_count: 4

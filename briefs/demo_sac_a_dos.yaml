@@ -1,0 +1,38 @@
+# Brief de démonstration (README) : image libre de droits, non versionnée (assets/products/ est ignoré).
+# Marque et produit fictifs, sans direction créative imposée : l'agent choisit angles et formats.
+name: Sac à dos de randonnée — conversion
+brand: Fjelda
+niche: mode
+objective: conversion
+
+product:
+  name: Fjelda Trek 24 L
+  description: Sac à dos en toile de laine, sangles en cuir, 24 litres pour la ville et la randonnée.
+  benefits:
+    - Toile de laine résistante au vent
+    - Sangles et poignée en cuir
+    - 24 litres, compartiment ordinateur
+  price: "89 €"
+  compare_at_price: "119 €"
+
+audience: "Randonneurs du week-end et citadins 25-45 ans, aiment les objets durables au style vintage"
+offer: "-30 € jusqu'à dimanche"
+
+da:
+  palette: ["#F1E9DF", "#2B2521", "#B8322A"]
+  fonts: ["Fraunces", "Work Sans"]
+  tone: chaleureux, aventureux, authentique
+  dos: ["lumière naturelle", "matières visibles"]
+  donts: ["ton publicitaire criard"]
+
+hook_idea: null
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims: ["imperméable"]
+
+assets:
+  - path: assets/products/sac_a_dos_rouge.jpg
+    description: "randonneuse de dos avec le sac rouge, lande et tour en arrière-plan"
+
+testimonials: []
+variants_count: 4

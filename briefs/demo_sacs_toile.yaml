@@ -1,0 +1,38 @@
+# Brief de démonstration (README) : image libre de droits, non versionnée (assets/products/ est ignoré).
+# Marque et produit fictifs, sans direction créative imposée : l'agent choisit angles et formats.
+name: Sacs en toile — trafic
+brand: Toile & Co
+niche: mode
+objective: traffic
+
+product:
+  name: Sac cabas convertible
+  description: Sac en toile de coton brut, se porte à la main ou en sac à dos, boucles colorées.
+  benefits:
+    - Se porte à la main ou sur le dos
+    - Toile de coton brut
+    - Grand volume pour les courses
+  price: "25 €"
+  compare_at_price: null
+
+audience: "Citadins 20-40 ans qui font leurs courses à pied et évitent les sacs jetables"
+offer: null
+
+da:
+  palette: ["#EFE8DC", "#1E1E1E", "#C8102E"]
+  fonts: ["Playfair Display", "Inter"]
+  tone: simple, malin, un brin d'humour
+  dos: ["couleurs franches"]
+  donts: ["discours moralisateur"]
+
+hook_idea: null
+ratios: ["4:5", "9:16"]
+language: fr
+forbidden_claims: ["zéro déchet"]
+
+assets:
+  - path: assets/products/sacs_toile.jpg
+    description: "femme de dos, bonnet rouge, deux sacs en toile portés en sac à dos"
+
+testimonials: []
+variants_count: 4
