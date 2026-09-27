@@ -6,7 +6,7 @@ Chaque étape lit l'objet de la précédente et écrit son fichier dans le dossi
 from __future__ import annotations
 
 import json
-import unicodedata
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -17,17 +17,12 @@ from agent.render import available_templates, render_html, screenshot_all
 from agent.schemas import (
     AdFormat, Angle, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
 )
-from agent.writers import OfflineWriter, Writer, fit_text
+from agent.writers import OfflineWriter, Writer, WriterError, fit_text, normalize
 
 OUTPUTS_DIR = ROOT / "outputs"
 
 
 # ------------------------------------------------------------------------ utilitaires
-
-
-def _norm(text: str) -> str:
-    """Minuscules sans accents, pour comparer des promesses interdites."""
-    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
 
 
 def _dump(path: Path, data: BaseModel | dict | list) -> None:
@@ -60,7 +55,7 @@ def eligibility(brief: Brief, fmt: AdFormat, templates: set[str]) -> str | None:
         if not _has_field(brief, path):
             return f"champ du brief manquant : {path}"
     if any("before_after" == h.value for h in fmt.hook_types):
-        if any("avant/apres" in _norm(c) or "avant apres" in _norm(c) for c in brief.forbidden_claims):
+        if any("avant/apres" in normalize(c) or "avant apres" in normalize(c) for c in brief.forbidden_claims):
             return "avant/après interdit par les promesses exclues du brief"
     if fmt.id not in templates:
         return "aucun gabarit de rendu pour ce format pour l'instant"
@@ -120,8 +115,8 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
     result: list[VariantCopy] = []
     for v in plan.variants:
         fmt = formats[v.format_id]
-        zones = writer.write_copy(brief, v.hook, fmt)
-        warnings: list[str] = []
+        zones, warnings = writer.write_copy(brief, v.hook, fmt)
+        warnings = list(warnings)
         for z in fmt.zones:
             text = zones.get(z.id)
             if text is not None and z.max_chars and len(text) > z.max_chars:
@@ -175,7 +170,11 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     _dump(run_dir / "brief.normalized.json", brief)
 
     # 3. angles
-    angles = writer.propose_angles(brief)
+    try:
+        angles = writer.propose_angles(brief)
+    except WriterError:
+        shutil.rmtree(run_dir, ignore_errors=True)  # rien d'exploitable à conserver
+        raise
     _dump(run_dir / "angles.json", [a.model_dump(mode="json") for a in angles])
 
     # 4. formats et plan de variantes
@@ -184,7 +183,11 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     _dump(run_dir / "variant_plan.json", plan)
 
     # 5. textes
-    copies = write_all_copy(brief, plan, formats, writer)
+    try:
+        copies = write_all_copy(brief, plan, formats, writer)
+    except WriterError:
+        shutil.rmtree(run_dir, ignore_errors=True)
+        raise
     _dump(run_dir / "copy.json", [c.model_dump(mode="json") for c in copies])
 
     # 7. rendu HTML puis PNG, un fichier par ratio
@@ -204,7 +207,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
 
     # 9. manifest + revue
     manifest = {
-        "brief": brief.name, "writer": writer.name, "created_at": datetime.now().isoformat(timespec="seconds"),
+        "brief": brief.name, "writer": writer.name, "usage": getattr(writer, "usage", None), "created_at": datetime.now().isoformat(timespec="seconds"),
         "variants": [
             {**v.model_dump(mode="json"), "copy": copy_by_id[v.id].zones,
              "warnings": copy_by_id[v.id].warnings, "files": rendered[v.id]}

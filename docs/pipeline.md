@@ -7,9 +7,9 @@ tout est traçable et rejouable.
 |---|---|---|---|---|
 | 1 | Lecture du brief | `brief.yaml` + images | `brief.normalized.json` | fait |
 | 2 | Analyse des assets | images produit | `assets.report.json` | à faire |
-| 3 | Stratégie (angles + hooks) | brief normalisé | `angles.json` | fait (rédacteur hors ligne ; Claude à brancher) |
+| 3 | Stratégie (angles + hooks) | brief normalisé | `angles.json` | fait (rédacteur hors ligne ou Claude) |
 | 4 | Sélection des formats | angles + base de formats | `variant_plan.json` | fait |
-| 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ; Claude à brancher) |
+| 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ou Claude) |
 | 6 | Composition visuelle | copy + assets + format | `layouts/*.json` + scènes générées | à faire |
 | 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 3 formats |
 | 8 | Contrôle qualité | rendus + brief | `qa.report.json` | à faire |
@@ -67,8 +67,20 @@ Classement des variantes avec justification, liens Canva, tout ce qui a été pr
   (`requires`, ex. avis réels pour le témoignage, ancien prix pour le prix barré), si une promesse interdite
   du brief l'exclut (avant/après) ou s'il n'a pas encore de gabarit de rendu.
 - **Textes** : `OfflineWriter` reformule uniquement le contenu du brief (bénéfices, offre, avis réels, prix) et
-  respecte les `max_chars`. Il n'invente ni avis, ni chiffres. Le rédacteur Claude prendra sa place via l'interface `Writer`.
+  respecte les `max_chars`. Il n'invente ni avis, ni chiffres.
 - **Rendu** : gabarits Jinja2 dans `agent/templates/` pour `fond_uni_packshots_prix`, `offre_prix_barre` et
   `temoignage_citation`. Couleurs d'accent automatiquement remplacées si leur contraste est insuffisant.
 - **PNG** : Playwright est optionnel (`pip install -e ".[render]"` puis `playwright install chromium`).
   Sans lui, le pipeline produit les HTML et le signale.
+
+## Le rédacteur Claude (`agent/claude_writer.py`)
+Activé avec `--writer claude` ; nécessite `pip install -e ".[llm]"` et une clé API (voir `.env.example`).
+- **Sorties structurées** : l'API reçoit un schéma Pydantic et renvoie un objet validé (`client.messages.parse`).
+- **Ce que le modèle écrit** : les angles et accroches, sous-titres, appels à l'action, titres facultatifs.
+- **Ce qu'il n'écrit jamais** : les prix, les avis clients et leurs signatures. Ils viennent du brief tels quels.
+- **Contrôles en code sur chaque texte du modèle** : longueur maximale de la zone, promesses interdites du
+  brief, chiffres absents du brief. Un texte rejeté est remplacé par celui du brief, avec un avertissement
+  dans `copy.json` et `review.md`.
+- **Confidentialité** : le modèle ne reçoit ni chemins de fichiers ni couleurs, seulement les faits du brief.
+- **Coût** : le nombre de tokens par run est affiché et consigné dans `manifest.json` (`usage`).
+- **Modèle** : `claude-opus-5` par défaut ; `--model` ou la variable `AD_AGENT_MODEL` pour en changer.

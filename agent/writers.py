@@ -8,6 +8,7 @@ Une implémentation adossée à Claude viendra s'y brancher sans changer le pipe
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Protocol
 
 from agent.schemas import Angle, AdFormat, Brief, HookType, Zone
@@ -19,6 +20,15 @@ CTA = {
 
 # Rôles de zones qui ne reçoivent jamais de texte généré
 NON_TEXT_ROLES = {"image", "logo"}
+
+
+class WriterError(RuntimeError):
+    """Erreur du rédacteur (clé absente, réseau, réponse inexploitable), avec un message lisible."""
+
+
+def normalize(text: str) -> str:
+    """Minuscules sans accents, pour comparer des textes (promesses interdites, etc.)."""
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
 
 
 def fit_text(text: str, max_chars: int | None) -> str:
@@ -35,7 +45,9 @@ class Writer(Protocol):
 
     def propose_angles(self, brief: Brief) -> list[Angle]: ...
 
-    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> dict[str, str]: ...
+    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
+        """Renvoie les textes par zone et la liste des avertissements."""
+        ...
 
 
 class OfflineWriter:
@@ -65,7 +77,7 @@ class OfflineWriter:
             )
         return angles
 
-    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> dict[str, str]:
+    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
         lang = CTA.get(brief.language, CTA["fr"])
         testimonial = next((t for t in brief.testimonials if t.text == hook), None)
         zones: dict[str, str] = {}
@@ -73,7 +85,7 @@ class OfflineWriter:
             text = self._zone_text(brief, hook, testimonial, z, lang)
             if text:
                 zones[z.id] = fit_text(text, z.max_chars)
-        return zones
+        return zones, []
 
     @staticmethod
     def _zone_text(brief: Brief, hook: str, testimonial, zone: Zone, lang: dict[str, str]) -> str | None:

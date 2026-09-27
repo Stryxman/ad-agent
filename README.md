@@ -27,6 +27,9 @@ pytest
 ad-agent run briefs/example_soin_peau.yaml --no-png   # génère un run dans outputs/ (HTML)
 ```
 
+Rédacteur Claude (optionnel) : `pip install -e ".[llm]"`, copier `.env.example` en `.env`, y mettre sa clé API, puis
+`ad-agent run briefs/example_soin_peau.yaml --writer claude`. Sans clé, le rédacteur hors ligne reste utilisable.
+
 Pour les captures PNG : `pip install -e ".[render]"` puis `playwright install chromium` (ou `firefox`, `webkit`), et lancer sans `--no-png`
 (`--browser firefox` pour choisir le moteur).
 
@@ -47,7 +50,7 @@ aux niches où il excelle (liste vide = universel).
 - [x] Première curation Meta Ad Library (US) : 8 fiches `draft`, protocole dans [docs/curation.md](docs/curation.md)
 - [ ] Compléter la base : comparatif, callouts, faux pop-up d'avis, formats bien-être
 - [x] Boucle brief → variantes → HTML avec 3 formats, rédacteur hors ligne (PNG via Playwright, à installer)
-- [ ] Rédacteur Claude (angles et textes) branché sur l'interface `Writer`
+- [x] Rédacteur Claude (angles et textes) : `--writer claude`, testé avec un faux client (premier essai réel à faire avec une clé)
 - [ ] Analyse des assets, génération de scènes (Nano Banana), contrôle qualité
 - [ ] Intégration Canva (Connect API, à vérifier avec le compte Pro)
 - [ ] Retour terrain : scores de formats selon les performances réelles

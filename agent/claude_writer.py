@@ -1,0 +1,246 @@
+"""Rédacteur adossé à Claude : propose les angles (étape 3) et écrit les textes des zones (étape 5).
+
+Principes de conception :
+- Sorties structurées : on passe un schéma Pydantic à l'API et on récupère un objet validé, jamais du texte libre à analyser.
+- Le modèle n'écrit que ce qui est créatif (accroches, sous-titres, appels à l'action). Les prix, les avis clients
+  et leur signature restent déterministes : ils viennent du brief tels quels.
+- Chaque texte du modèle est revérifié par du code (longueur, promesses interdites, chiffres inventés) ;
+  s'il échoue, on retombe sur le texte du brief et un avertissement est consigné.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+from typing import Any, Literal
+
+from pydantic import BaseModel
+
+from agent.schemas import AdFormat, Angle, Brief, HookType
+from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError, normalize
+
+DEFAULT_MODEL = "claude-opus-5"
+
+# Zones dont le contenu ne doit jamais être écrit par le modèle
+FIXED_ZONES = {"quote", "author", "stars", "price_old", "price_new"}
+# Rôles que le modèle peut rédiger
+CREATIVE_ROLES = {"headline", "subhead", "cta", "badge"}
+
+SYSTEM = """Tu es directeur de création, spécialisé dans les publicités statiques pour les réseaux sociaux.
+
+Règles impératives :
+- Tu n'utilises que les faits du brief. Tu n'inventes ni chiffre, ni statistique, ni prix, ni avis, ni promesse.
+- Tu respectes la langue, le ton et les consignes de direction artistique du brief.
+- Tu n'emploies jamais les promesses interdites du brief, ni leurs formulations proches.
+- Tes textes sont courts, concrets, sans jargon ni superlatifs vides. Une idée par texte.
+- Tu respectes strictement la longueur maximale de chaque zone (en caractères)."""
+
+
+# ------------------------------------------------------------ schémas des réponses
+
+
+class AngleDraft(BaseModel):
+    hook_type: Literal["benefit", "offer", "problem_solution", "curiosity"]
+    hooks: list[str]
+    rationale: str
+
+
+class AnglesDraft(BaseModel):
+    angles: list[AngleDraft]
+
+
+class ZoneDraft(BaseModel):
+    zone_id: str
+    text: str
+
+
+class CopyDraft(BaseModel):
+    zones: list[ZoneDraft]
+
+
+# ---------------------------------------------------------------------- utilitaires
+
+
+def _numbers(text: str) -> set[str]:
+    return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", text)}
+
+
+def brief_facts(brief: Brief) -> dict[str, Any]:
+    """Ce que le modèle a le droit de savoir : pas de chemins de fichiers ni de couleurs."""
+    return {
+        "campagne": brief.name, "marque": brief.brand, "niche": brief.niche.value,
+        "objectif": brief.objective.value, "langue": brief.language,
+        "produit": {
+            "nom": brief.product.name, "description": brief.product.description,
+            "benefices": brief.product.benefits, "prix": brief.product.price,
+            "ancien_prix": brief.product.compare_at_price,
+        },
+        "audience": brief.audience, "offre": brief.offer,
+        "ton": brief.da.tone, "a_faire": brief.da.dos, "a_eviter": brief.da.donts,
+        "hook_impose": brief.hook_idea, "promesses_interdites": brief.forbidden_claims,
+    }
+
+
+def check_text(text: str, max_chars: int | None, brief: Brief, allowed_numbers: set[str]) -> str | None:
+    """Renvoie le motif de rejet d'un texte produit par le modèle, ou None s'il est acceptable."""
+    if not text.strip():
+        return "texte vide"
+    if max_chars is not None and len(text) > max_chars:
+        return f"trop long ({len(text)} > {max_chars} caractères)"
+    norm = normalize(text)
+    for claim in brief.forbidden_claims:
+        if normalize(claim) in norm:
+            return f"contient la promesse interdite « {claim} »"
+    invented = _numbers(text) - allowed_numbers
+    if invented:
+        return f"chiffre absent du brief : {sorted(invented)}"
+    return None
+
+
+# --------------------------------------------------------------------- le rédacteur
+
+
+class ClaudeWriter:
+    name = "claude"
+
+    def __init__(self, client: Any = None, model: str | None = None) -> None:
+        if client is None:
+            try:
+                import anthropic
+            except ImportError as e:
+                raise WriterError('Le SDK Anthropic est absent : pip install -e ".[llm]"') from e
+            client = anthropic.Anthropic()
+        self.client = client
+        self.model = model or os.environ.get("AD_AGENT_MODEL") or DEFAULT_MODEL
+        self.usage = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
+        self._offline = OfflineWriter()
+
+    # -- appel de l'API ---------------------------------------------------------------
+
+    def _ask(self, prompt: str, schema: type[BaseModel]) -> Any:
+        try:
+            response = self.client.messages.parse(
+                model=self.model,
+                max_tokens=8000,
+                system=SYSTEM,
+                messages=[{"role": "user", "content": prompt}],
+                output_format=schema,
+                output_config={"effort": "low"},  # tâche courte : inutile de payer une longue réflexion
+            )
+        except TypeError as e:
+            if "authentication" in str(e).lower():
+                raise WriterError(
+                    "Aucune clé API trouvée. Définissez ANTHROPIC_API_KEY (voir .env.example)."
+                ) from e
+            raise
+        except Exception as e:
+            name = type(e).__name__
+            if name == "AuthenticationError":
+                raise WriterError("Clé API refusée : vérifiez ANTHROPIC_API_KEY dans la console Anthropic.") from e
+            if name == "PermissionDeniedError":
+                raise WriterError("Cette clé n'a pas accès à ce modèle ou à cette fonctionnalité.") from e
+            if name == "NotFoundError":
+                raise WriterError(f"Modèle introuvable : « {self.model} ». Voir AD_AGENT_MODEL.") from e
+            if name == "RateLimitError":
+                raise WriterError("Limite de débit atteinte : réessayez dans un instant.") from e
+            if name == "APIConnectionError":
+                raise WriterError("Connexion à l'API impossible : vérifiez le réseau.") from e
+            if name == "APIStatusError" or hasattr(e, "status_code"):
+                raise WriterError(f"Erreur de l'API ({getattr(e, 'status_code', '?')}) : {e}") from e
+            raise
+
+        usage = getattr(response, "usage", None)
+        if usage is not None:
+            self.usage["input_tokens"] += getattr(usage, "input_tokens", 0) or 0
+            self.usage["output_tokens"] += getattr(usage, "output_tokens", 0) or 0
+        self.usage["calls"] += 1
+        parsed = getattr(response, "parsed_output", None)
+        if parsed is None:
+            raise WriterError(f"Réponse inexploitable du modèle (stop_reason={getattr(response, 'stop_reason', '?')}).")
+        return parsed
+
+    # -- étape 3 : angles -------------------------------------------------------------
+
+    def propose_angles(self, brief: Brief) -> list[Angle]:
+        facts = brief_facts(brief)
+        allowed_types = ["benefit", "problem_solution", "curiosity"] + (["offer"] if brief.offer else [])
+        prompt = (
+            "Voici le brief d'une campagne publicitaire (JSON) :\n"
+            f"{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
+            "Propose 4 angles créatifs distincts, chacun d'un type parmi : "
+            f"{', '.join(allowed_types)}. Pour chaque angle, écris 3 accroches de 60 caractères maximum, "
+            "dans la langue du brief, fondées uniquement sur les faits du brief, "
+            "et une phrase de justification (pourquoi cet angle convient à cette audience)."
+        )
+        draft: AnglesDraft = self._ask(prompt, AnglesDraft)
+
+        allowed_numbers = _numbers(json.dumps(facts, ensure_ascii=False))
+        by_type: dict[str, list[str]] = {}
+        rationale: dict[str, str] = {}
+        for a in draft.angles:
+            if a.hook_type not in allowed_types:
+                continue
+            for hook in a.hooks:
+                hook = hook.strip()
+                if hook and hook not in by_type.get(a.hook_type, []) and not check_text(hook, 60, brief, allowed_numbers):
+                    by_type.setdefault(a.hook_type, []).append(hook)
+                    rationale.setdefault(a.hook_type, a.rationale)
+
+        angles: list[Angle] = []
+        if brief.hook_idea:
+            angles.append(Angle(id="a_brief", hook_type=HookType.benefit, hooks=[brief.hook_idea],
+                                rationale="Hook imposé par le brief."))
+        for hook_type, hooks in by_type.items():
+            if hook_type == "offer":
+                hooks = [brief.offer, *[h for h in hooks if h != brief.offer]]  # l'offre exacte d'abord
+            angles.append(Angle(id=f"a_{hook_type}", hook_type=HookType(hook_type), hooks=hooks,
+                                rationale=rationale[hook_type]))
+        if brief.offer and "offer" not in by_type:
+            angles.append(Angle(id="a_offer", hook_type=HookType.offer, hooks=[brief.offer],
+                                rationale="Offre commerciale indiquée dans le brief."))
+        if brief.testimonials:  # la preuve sociale reste factuelle : les vrais avis, sans réécriture
+            angles.append(Angle(id="a_proof", hook_type=HookType.social_proof,
+                                hooks=[t.text for t in brief.testimonials],
+                                rationale="Avis clients réels fournis dans le brief."))
+        if not angles:
+            raise WriterError("Le modèle n'a produit aucun angle utilisable pour ce brief.")
+        return angles
+
+    # -- étape 5 : textes -------------------------------------------------------------
+
+    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
+        zones, warnings = self._offline.write_copy(brief, hook, fmt)  # base déterministe (prix, avis, repli)
+        creative = [z for z in fmt.zones
+                    if z.role in CREATIVE_ROLES and z.role not in NON_TEXT_ROLES and z.id not in FIXED_ZONES]
+        if not creative:
+            return zones, warnings
+
+        facts = brief_facts(brief)
+        spec = [{"zone_id": z.id, "role": z.role, "longueur_max": z.max_chars, "obligatoire": z.required,
+                 "position": z.position} for z in creative]
+        prompt = (
+            f"Brief (JSON) :\n{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
+            f"Format d'annonce : « {fmt.name} » — {fmt.description.strip()}\n"
+            f"Structure visuelle : {fmt.layout_notes.strip()}\n\n"
+            f"Message à porter (accroche) : « {hook} »\n\n"
+            f"Écris le texte de chacune de ces zones (JSON) :\n{json.dumps(spec, ensure_ascii=False, indent=2)}\n"
+            "Pour une zone facultative sans intérêt, renvoie un texte vide. "
+            "Le texte du titre principal doit porter le message ci-dessus, reformulé si besoin."
+        )
+        draft: CopyDraft = self._ask(prompt, CopyDraft)
+
+        allowed_numbers = _numbers(json.dumps(facts, ensure_ascii=False)) | _numbers(hook)
+        limits = {z.id: z.max_chars for z in creative}
+        for item in draft.zones:
+            if item.zone_id not in limits:
+                continue
+            text = re.sub(r"\s+", " ", item.text).strip()
+            if not text:
+                continue
+            reason = check_text(text, limits[item.zone_id], brief, allowed_numbers)
+            if reason:
+                warnings.append(f"zone « {item.zone_id} » : texte du modèle rejeté ({reason}), texte du brief conservé")
+            else:
+                zones[item.zone_id] = text
+        return zones, warnings

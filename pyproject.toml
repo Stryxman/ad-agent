@@ -12,6 +12,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 render = ["playwright>=1.40"]
+llm = ["anthropic>=1.0"]
 
 [project.scripts]
 ad-agent = "agent.cli:main"
