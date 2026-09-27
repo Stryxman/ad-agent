@@ -19,7 +19,7 @@ seulement un prototype :
 - Un **traitement d'image raisonné, pas juste branché** : le détourage automatique n'est déclenché que si
   l'image ne l'est pas déjà, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
   évité de justesse un modèle par défaut sous licence non commerciale.
-- **Tout est testé** : 96 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
+- **Tout est testé** : 98 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
   détourage, vrais rendus PNG) à chaque étape ajoutée.
 
 ## Comment ça marche
@@ -43,7 +43,7 @@ Le détail de chaque étape, avec le format exact de ses fichiers de sortie, est
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate                                      # valide briefs et formats
-pytest                                                  # 96 tests
+pytest                                                  # 98 tests
 ad-agent run briefs/example_soin_peau.yaml --no-png     # génère un run dans outputs/ (HTML)
 ```
 
@@ -79,7 +79,7 @@ agent/       schémas, chargement, rédacteurs (hors ligne / Claude), rendu, CLI
 assets/      images produit (non versionnées)
 outputs/     runs générés (non versionnés)
 docs/        pipeline détaillé, protocole de curation, règles Meta et design, specs
-tests/       96 tests
+tests/       98 tests
 ```
 
 ## Règles de la base de formats
@@ -103,12 +103,19 @@ aux niches où il excelle (liste vide = universel).
 - [x] Rendu soigné et conforme Meta : fonds en dégradé calculés depuis la palette, vraies polices de la DA,
   1440 × 1800 en 4:5, zones de sécurité en 9:16 ([règles et sources](docs/regles-et-design.md))
 - [x] Textes de publication prêts pour Ads Manager (titres ≤ 27 caractères, textes principaux ≤ 150)
-- [x] 96 tests, plusieurs vérifications en conditions réelles
+- [x] 98 tests, plusieurs vérifications en conditions réelles
 - [x] Passe de revue sur `agent/` (8 constats corrigés : texte illisible sur fond accent, chemins
   d'assets non confinés à la racine du projet, incohérences produit/scène, etc.)
 
 ## Prochaines étapes (pas commencées, choix assumés)
 
+- **Affiner le fond `mesh`** : sur une palette chaude et terreuse (exemple beauté), les taches de couleur
+  donnent un rendu un peu terne. Pistes : teinter vers l'accent plutôt que vers la couleur de texte, ou
+  réserver le mesh aux palettes contrastées. En attendant, `--fond lineaire` ou `da.fond` permettent
+  d'en changer sans toucher au code.
+- **9:16 : stories ou reels ?** La marge basse suit la bande des *reels* (35 %), la plus contraignante :
+  le produit y est plus petit qu'en 4:5. Les *stories* laissent davantage de place en bas ; un réglage de
+  placement permettrait de profiter de cet espace quand l'annonce ne vise pas les reels.
 - **Nouvelles structures repérées** : écran partagé problèmes/solution, « eux vs nous », statistique en
   exergue, bénéfices en étoile… à documenter avec la méthode de curation (liste et réserves dans
   [regles-et-design.md](docs/regles-et-design.md#3-structures-créatives-repérées-pour-la-suite-de-la-base-de-formats)).
