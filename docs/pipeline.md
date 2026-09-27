@@ -11,7 +11,7 @@ tout est traçable et rejouable.
 | 4 | Sélection des formats | angles + base de formats | `variant_plan.json` | fait |
 | 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ou Claude) |
 | 6 | Composition visuelle | copy + assets + format | `layouts/*.json` + scènes générées | à faire |
-| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 7 formats sur 8 |
+| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour les 8 formats |
 | 8 | Contrôle qualité | rendus + brief | `qa.report.json` | à faire |
 | 9 | Export et packaging | rendus | `manifest.json`, `review.md` | fait (Canva à venir) |
 | 10 | Retour terrain (v2) | choix + performances | mise à jour des scores de formats | à faire |
@@ -137,3 +137,21 @@ Ajout d'un troisième type de zone : `role: list` (ex. `infographie_probleme`), 
   future zone de ce type.
 - Testé en conditions réelles avec `--writer claude` (nécessite un brief à objectif `awareness`/`traffic`/`lead` :
   `infographie_probleme` ne cible pas la conversion).
+
+## `avant_apres_beaute` : le dernier format (2026-09-27)
+
+- **Assets étiquetés** : `AssetRef` gagne deux champs, `role` (ex. `"before"`, `"after"`) et `label`
+  (ex. `"Jour 1"`). Un brief sans ces deux rôles voit le format exclu avec une raison explicite
+  (`requires: [assets.before, assets.after]`), plutôt que de rendre deux cadres vides.
+- **Jamais de détourage** sur les photos avant/après : ce sont de vraies photos de personnes, utilisées
+  telles quelles (`generated_scene_ok: false` déjà présent dans la fiche).
+- **`disclaimer` est un texte légal figé**, jamais laissé à un rédacteur (créatif ou hors ligne) : toujours
+  la même phrase de prudence, dans la langue du brief.
+- **Bug de couverture trouvé en testant en réel** : le prompt demandait « 4 angles parmi les types
+  autorisés », ce qui pouvait ignorer un type au hasard (dont `before_after`), gaspillant un format pourtant
+  disponible. Corrigé en demandant explicitement un angle par type, sans exception.
+- **Testé avec de vraies images du produit de l'utilisateur, réutilisées deux fois** (pas une vraie
+  démonstration avant/après, seulement une preuve de bon fonctionnement du mécanisme). Deux photos avant/après
+  proposées par l'utilisateur (produit Dior) ont été écartées : marque concurrente réelle, photographie
+  professionnelle sans doute protégée malgré l'absence de filigrane. Un vrai test de contenu attend de
+  vraies photos avant/après consenties.

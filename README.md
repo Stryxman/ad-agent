@@ -49,7 +49,7 @@ aux niches où il excelle (liste vide = universel).
 - [x] Structure du projet, schémas brief et format (avec niches), CLI de validation
 - [x] Première curation Meta Ad Library (US) : 8 fiches `draft`, protocole dans [docs/curation.md](docs/curation.md)
 - [ ] Compléter la base : comparatif, callouts, faux pop-up d'avis, formats bien-être
-- [x] Boucle brief → variantes → HTML avec 7 formats sur 8 (voir docs/pipeline.md ; `avant_apres_beaute` seul restant, faute de vraies photos avant/après), PNG via Playwright
+- [x] Boucle brief → variantes → HTML avec les 8 formats (voir docs/pipeline.md pour le détail de chacun), PNG via Playwright
 - [x] Rédacteur Claude (angles et textes) : `--writer claude`, testé avec un faux client (premier essai réel à faire avec une clé)
 - [ ] Analyse des assets, génération de scènes (Nano Banana), contrôle qualité
 - [ ] Intégration Canva (Connect API, à vérifier avec le compte Pro)

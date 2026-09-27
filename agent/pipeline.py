@@ -33,6 +33,9 @@ def _dump(path: Path, data: BaseModel | dict | list) -> None:
 
 
 def _has_field(brief: Brief, dotted: str) -> bool:
+    if dotted.startswith("assets."):
+        role = dotted.split(".", 1)[1]
+        return any(a.role == role for a in brief.assets)
     obj = brief
     for part in dotted.split("."):
         obj = getattr(obj, part, None)
@@ -182,14 +185,19 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     _dump(run_dir / "brief.normalized.json", brief)
 
     # 2. analyse des assets : isolé ou à détourer, avec mise en cache
-    asset_reports = [ensure_isolated(ROOT / a.path) for a in brief.assets]
+    # les photos étiquetées avant/après ne sont jamais détourées : ce sont de vraies photos de personnes,
+    # utilisées telles quelles, jamais un produit isolé sur fond uni
+    generic_assets = [a for a in brief.assets if a.role not in ("before", "after")]
+    asset_reports = [ensure_isolated(ROOT / a.path) for a in generic_assets]
     _dump(run_dir / "assets.report.json", [a.model_dump(mode="json") for a in asset_reports])
     product_image = next(
         (Path(a.used_path) for a in asset_reports if a.action not in ("echec", "introuvable")), None
     )
     # la photo d'origine (avant détourage), pour les gabarits qui veulent une scène plein cadre plutôt
     # qu'un produit isolé sur fond uni
-    scene_image = next((ROOT / a.path for a in brief.assets if (ROOT / a.path).is_file()), None)
+    scene_image = next((ROOT / a.path for a in generic_assets if (ROOT / a.path).is_file()), None)
+    before_image = next((ROOT / a.path for a in brief.assets if a.role == "before" and (ROOT / a.path).is_file()), None)
+    after_image = next((ROOT / a.path for a in brief.assets if a.role == "after" and (ROOT / a.path).is_file()), None)
 
     # 3. angles
     try:
@@ -220,7 +228,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         rendered[v.id] = {}
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
-                                    run_dir / "renders", product_image, scene_image)
+                                    run_dir / "renders", product_image, scene_image, before_image, after_image)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
     if render_png and jobs:

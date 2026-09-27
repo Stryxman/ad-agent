@@ -21,8 +21,19 @@ def test_fit_text_cuts_on_word_boundary_within_limit():
     assert fit_text("court", 20) == "court"
 
 
-def test_forbidden_before_after_excludes_the_format():
-    brief = load_brief(EXAMPLE)
+def test_before_after_format_requires_tagged_real_photos():
+    brief = load_brief(EXAMPLE)  # aucune photo étiquetée before/after dans cet exemple
+    fmt = next(f for f in load_all_formats() if f.id == "avant_apres_beaute")
+    assert "assets.before" in eligibility(brief, fmt, available_templates())
+
+
+def test_forbidden_before_after_excludes_the_format_even_with_real_photos():
+    from agent.schemas import AssetRef
+
+    brief = load_brief(EXAMPLE).model_copy(update={"assets": [
+        AssetRef(path="assets/products/serum_packshot.png", role="before"),
+        AssetRef(path="assets/products/serum_packshot.png", role="after"),
+    ]})
     fmt = next(f for f in load_all_formats() if f.id == "avant_apres_beaute")
     assert "avant/après" in eligibility(brief, fmt, available_templates())
 
@@ -73,6 +84,35 @@ def test_tech_brief_unlocks_mode_tech_only_formats():
     beauty_plan = _plan(load_brief(EXAMPLE))
     assert all(f not in {"carte_produit_catalogue", "spotlight_fonctionnalite"}
               for f in {v.format_id for v in beauty_plan.variants})  # toujours exclus en beauté
+
+
+def test_before_after_disclaimer_is_fixed_and_labels_come_from_asset_metadata():
+    from agent.schemas import AssetRef
+
+    brief = load_brief(EXAMPLE).model_copy(update={"assets": [
+        AssetRef(path="assets/products/serum_packshot.png", role="before", label="Jour 1"),
+        AssetRef(path="assets/products/serum_packshot.png", role="after", label="Jour 30"),
+    ]})
+    fmt = next(f for f in load_all_formats() if f.id == "avant_apres_beaute")
+    zones, _ = OfflineWriter().write_copy(brief, "peu importe", fmt)
+    assert zones["disclaimer"] == "Résultats variables selon les personnes."
+    assert zones["before_label"] == "Jour 1" and zones["after_label"] == "Jour 30"
+
+
+def test_before_after_format_is_selected_when_real_photos_are_tagged():
+    from agent.schemas import AssetRef
+
+    # forbidden_claims vidé : le brief d'exemple interdit lui-même « avant/après sur la peau »,
+    # ce test isole la seule condition qui nous intéresse ici (les photos étiquetées).
+    brief = load_brief(EXAMPLE).model_copy(update={
+        "assets": [
+            AssetRef(path="assets/products/serum_packshot.png", role="before", label="Jour 1"),
+            AssetRef(path="assets/products/serum_packshot.png", role="after", label="Jour 30"),
+        ],
+        "forbidden_claims": [],
+    })
+    plan = _plan(brief)
+    assert all(s.format_id != "avant_apres_beaute" for s in plan.skipped)
 
 
 def test_offline_writer_leaves_list_zone_empty_without_inventing_content():

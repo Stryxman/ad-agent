@@ -1,0 +1,38 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--bg); color: {{ on_bg }}; gap: calc(var(--u) * 3); justify-content: flex-start; }
+  h1 { font-size: calc(var(--u) * 5); line-height: 1.2; }
+  .pair { display: flex; width: 100%; flex: 1; gap: calc(var(--u) * 1.4); min-height: 0; }
+  .half { position: relative; flex: 1; border-radius: calc(var(--u) * 1.6); overflow: hidden; background: var(--fg);
+          display: flex; align-items: center; justify-content: center; }
+  .half img { width: 100%; height: 100%; object-fit: cover; }
+  .half .ph { border: none; color: {{ on_bg }}; opacity: .5; font-size: calc(var(--u) * 3); }
+  .label { position: absolute; top: calc(var(--u) * 2); left: calc(var(--u) * 2); background: rgba(0,0,0,.55);
+           color: #fff; font-size: calc(var(--u) * 2.6); padding: calc(var(--u) * .8) calc(var(--u) * 1.8);
+           border-radius: 999px; }
+  .disclaimer { font-size: calc(var(--u) * 2.2); opacity: .6; }
+  .foot { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+  .cta { background: var(--accent); color: {{ on_accent }}; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  {% if z.headline %}<h1 class="display">{{ z.headline }}</h1>{% endif %}
+  <div class="pair">
+    <div class="half">
+      {% if before_img %}<img src="{{ before_img }}" alt="avant">{% else %}<div class="ph">avant</div>{% endif %}
+      {% if z.before_label %}<span class="label">{{ z.before_label }}</span>{% endif %}
+    </div>
+    <div class="half">
+      {% if after_img %}<img src="{{ after_img }}" alt="après">{% else %}<div class="ph">après</div>{% endif %}
+      {% if z.after_label %}<span class="label">{{ z.after_label }}</span>{% endif %}
+    </div>
+  </div>
+  <p class="disclaimer">{{ z.disclaimer }}</p>
+  <div class="foot">
+    <span class="brand">{{ brand }}</span>
+    {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+  </div>
+</div>
+{% endblock %}

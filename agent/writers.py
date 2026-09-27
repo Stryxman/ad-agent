@@ -109,6 +109,12 @@ class OfflineWriter:
             return f"à partir de {brief.product.price}" if brief.product.price else None
         if zone.id == "offer_line":
             return brief.offer
+        if zone.id == "disclaimer":
+            # texte légal figé, jamais laissé à l'appréciation d'un rédacteur (créatif ou non)
+            return "Individual results may vary." if brief.language == "en" else "Résultats variables selon les personnes."
+        if zone.id in ("before_label", "after_label"):
+            role = "before" if zone.id == "before_label" else "after"
+            return next((a.label for a in brief.assets if a.role == role and a.label), None)
         if zone.role == "headline":
             return hook
         if zone.role == "subhead":

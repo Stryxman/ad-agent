@@ -9,6 +9,7 @@ ratios: ["4:5", "1:1"]
 objectives: [conversion]
 hook_types: [before_after]
 niches_fit: [beaute]   # réservé à la beauté ; pas de santé/bien-être
+requires: [assets.before, assets.after]   # deux photos réelles, étiquetées, sinon format écarté
 
 zones:
   - id: before
@@ -20,10 +21,12 @@ zones:
   - id: before_label
     role: badge
     max_chars: 12
+    required: false   # dépend du libellé fourni sur l'asset ; sinon simplement absent
     position: sur l'image « avant », ex. « Jour 1 »
   - id: after_label
     role: badge
     max_chars: 12
+    required: false
     position: sur l'image « après », ex. « Jour 30 »
   - id: headline
     role: headline

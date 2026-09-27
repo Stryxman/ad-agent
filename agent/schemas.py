@@ -67,6 +67,12 @@ class DA(BaseModel):
 class AssetRef(BaseModel):
     path: str
     description: str = ""
+    role: str | None = Field(
+        default=None,
+        description="Étiquette optionnelle (ex. 'before', 'after') pour les formats qui référencent "
+                    "des photos précises plutôt que la première image venue.",
+    )
+    label: str | None = Field(default=None, description="Libellé factuel affiché avec l'image (ex. 'Jour 1')")
 
 
 class Testimonial(BaseModel):

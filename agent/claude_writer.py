@@ -23,7 +23,10 @@ from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError, normalize
 DEFAULT_MODEL = "claude-opus-5"
 
 # Zones dont le contenu ne doit jamais être écrit par le modèle
-FIXED_ZONES = {"quote", "author", "stars", "price_old", "price_new", "product_name", "price_line", "offer_line"}
+FIXED_ZONES = {
+    "quote", "author", "stars", "price_old", "price_new", "product_name", "price_line", "offer_line",
+    "disclaimer", "before_label", "after_label",  # texte légal et métadonnées d'asset : jamais réécrits
+}
 # Rôles que le modèle peut rédiger ("list" = plusieurs lignes courtes, ex. les symptômes d'une infographie)
 CREATIVE_ROLES = {"headline", "subhead", "cta", "badge", "list"}
 
@@ -41,7 +44,7 @@ Règles impératives :
 
 
 class AngleDraft(BaseModel):
-    hook_type: Literal["benefit", "offer", "problem_solution", "curiosity"]
+    hook_type: Literal["benefit", "offer", "problem_solution", "curiosity", "before_after"]
     hooks: list[str]
     rationale: str
 
@@ -164,12 +167,17 @@ class ClaudeWriter:
 
     def propose_angles(self, brief: Brief) -> list[Angle]:
         facts = brief_facts(brief)
-        allowed_types = ["benefit", "problem_solution", "curiosity"] + (["offer"] if brief.offer else [])
+        has_before_after = any(a.role == "before" for a in brief.assets) and any(a.role == "after" for a in brief.assets)
+        allowed_types = (
+            ["benefit", "problem_solution", "curiosity"]
+            + (["offer"] if brief.offer else [])
+            + (["before_after"] if has_before_after else [])
+        )
         prompt = (
             "Voici le brief d'une campagne publicitaire (JSON) :\n"
             f"{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
-            "Propose 4 angles créatifs distincts, chacun d'un type parmi : "
-            f"{', '.join(allowed_types)}. Pour chaque angle, écris 3 accroches de 60 caractères maximum, "
+            f"Propose UN angle pour CHACUN des types suivants, sans en omettre aucun : {', '.join(allowed_types)}. "
+            "Pour chaque angle, écris 3 accroches de 60 caractères maximum, "
             "dans la langue du brief, fondées uniquement sur les faits du brief, "
             "et une phrase de justification (pourquoi cet angle convient à cette audience)."
         )
