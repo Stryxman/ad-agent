@@ -13,6 +13,7 @@ from markupsafe import Markup
 
 from agent.backgrounds import Look, make_look
 from agent.colors import contrast_color, contrast_ratio, readable_on  # réexportés (tests, gabarits)
+from agent.fonts import LOADED_FAMILIES_JS, missing, safe_family
 from agent.schemas import AdFormat, Brief, Variant
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -78,7 +79,9 @@ def _context(fmt: AdFormat, zones: dict, brief: Brief, ratio: str, product_image
         "on_bg": look.on_bg, "on_accent_surface": look.on_accent_surface, "accent_text": look.accent_text,
         # blocs posés sur une couleur pure de la palette
         "on_accent": contrast_color(accent), "on_fg": contrast_color(fg),
-        "font_display": fonts[0] if fonts else "Georgia", "font_body": fonts[1] if len(fonts) > 1 else "Helvetica",
+        # noms venus du brief : seuls les noms sûrs atteignent le CSS, sinon police de secours
+        "font_display": (safe_family(fonts[0]) or "Georgia") if fonts else "Georgia",
+        "font_body": (safe_family(fonts[1]) or "Helvetica") if len(fonts) > 1 else "Helvetica",
         "font_head": Markup(font_head), "safe_overlay": safe_overlay, "safe": safe_zone_px(ratio),
         "brand": brief.brand or brief.product.name, "product_name": brief.product.name,
         # produit détouré (fond uni/dégradé) vs. photo d'origine (scène plein cadre, fond conservé)
@@ -107,23 +110,29 @@ def render_html(variant: Variant, fmt: AdFormat, zones: dict, brief: Brief, rati
 BROWSERS = ("chromium", "firefox", "webkit")
 
 
-def screenshot_all(jobs: list[tuple[str, str, Path]], browser_name: str = "chromium") -> dict[tuple[str, str], Path]:
-    """Capture chaque HTML (variante, ratio, chemin) en PNG à la taille de son ratio.
-    Sans Playwright ou sans navigateur, prévient et renvoie ce qui a pu être capturé."""
+def screenshot_all(jobs: list[tuple[str, str, Path]], browser_name: str = "chromium",
+                   fonts: tuple[str, ...] = ()) -> tuple[dict[tuple[str, str], Path], list[str] | None]:
+    """Capture chaque HTML en PNG (échelle 4/3) et renvoie aussi les polices demandées non chargées
+    (None si rien n'a pu être vérifié : Playwright ou navigateur absent)."""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
         print("Playwright n'est pas installé : HTML généré sans PNG "
               "(pip install -e \".[render]\" puis playwright install <navigateur>).", file=sys.stderr)
-        return {}
+        return {}, None
     out: dict[tuple[str, str], Path] = {}
+    absent: set[str] = set()
+    checked = False
     try:
         with sync_playwright() as p:
             browser = getattr(p, browser_name).launch()
             for variant_id, ratio, html_path in jobs:
                 w, h = RATIO_SIZES[ratio]
                 page = browser.new_page(viewport={"width": w, "height": h}, device_scale_factor=SCALE)
-                page.goto(html_path.resolve().as_uri())
+                page.goto(html_path.resolve().as_uri(), wait_until="networkidle")
+                if fonts:
+                    absent.update(missing(fonts, page.evaluate(LOADED_FAMILIES_JS)))
+                    checked = True
                 png = html_path.with_suffix(".png")
                 page.screenshot(path=str(png))
                 page.close()
@@ -132,4 +141,4 @@ def screenshot_all(jobs: list[tuple[str, str, Path]], browser_name: str = "chrom
     except Exception as e:  # navigateur non installé, etc.
         print(f"Capture PNG impossible ({e.__class__.__name__}) : HTML généré sans PNG. "
               f"Le navigateur est-il installé ? (playwright install {browser_name})", file=sys.stderr)
-    return out
+    return out, (sorted(absent) if checked or not fonts else None)

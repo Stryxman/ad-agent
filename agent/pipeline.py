@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from agent.assets import ensure_isolated
 from agent.loader import ROOT, load_all_formats, load_brief
 from agent.backgrounds import make_look, resolve_kind
+from agent.fonts import resolve as resolve_fonts
 from agent.render import available_templates, palette_of, render_html, screenshot_all
 from agent.schemas import (
     AdFormat, Angle, AssetAnalysis, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
@@ -272,6 +273,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
 
     # 7. rendu HTML puis PNG, un fichier par ratio
     notes = ["Rendu de contrôle des zones de sécurité : ne pas publier."] if safe_overlay else []
+    font_plan = resolve_fonts(brief.da.fonts)
     copy_by_id = {c.variant_id: c for c in copies}
     rendered: dict[str, dict[str, dict[str, str]]] = {}
     jobs: list[tuple[str, str, Path]] = []
@@ -280,12 +282,22 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
                                     run_dir / "renders", product_image, scene_image, before_image, after_image,
-                                    look=looks[v.id], safe_overlay=safe_overlay)
+                                    look=looks[v.id], font_head=font_plan.head, safe_overlay=safe_overlay)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
+    missing_fonts: list[str] | None = None
     if render_png and jobs:
-        for (variant_id, ratio), png in screenshot_all(jobs, browser).items():
+        pngs, missing_fonts = screenshot_all(jobs, browser, fonts=tuple(font_plan.sources))
+        for (variant_id, ratio), png in pngs.items():
             rendered[variant_id][ratio]["png"] = str(png.relative_to(run_dir))
+    notes += font_plan.warnings
+    notes += [f"Police « {f} » : {'fichier local' if s == 'local' else 'Google Fonts'}"
+              for f, s in font_plan.sources.items()]
+    if font_plan.sources and missing_fonts is None:
+        notes.append("Polices non vérifiées (pas de capture PNG).")
+    for f in missing_fonts or []:
+        notes.append(f"⚠ police « {f} » non chargée : rendu en police de secours "
+                     f"(ajoutez le fichier dans assets/fonts/ ou vérifiez le nom sur Google Fonts).")
 
     # 9. manifest + revue
     manifest = {
@@ -296,6 +308,8 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
             for v in plan.variants
         ],
         "skipped_formats": [s.model_dump(mode="json") for s in plan.skipped],
+        "fonts": {"sources": font_plan.sources, "verified": missing_fonts is not None,
+                  "missing": missing_fonts or []},
     }
     _dump(run_dir / "manifest.json", manifest)
     write_review(run_dir / "review.md", brief, plan, copies, formats, rendered, notes)
