@@ -1,6 +1,6 @@
 # Spec — qualité du rendu (A) et textes de publication (B)
 
-Date : 2026-09-27 · Statut : en revue · Recherche associée : [regles-et-design.md](../regles-et-design.md)
+Date : 2026-09-27 · Statut : implémentée · Recherche associée : [regles-et-design.md](../regles-et-design.md)
 
 ## Contexte
 
@@ -77,17 +77,18 @@ Nouveaux formats (roadmap, section 3 de la recherche), export CSV, finition Canv
 - Le fond retenu est inscrit dans `manifest.json` pour chaque variante.
 - Les gabarits remplacent `background: var(--bg)` et `var(--accent)` de leur canevas par
   `{{ bg_surface_css }}` et `{{ accent_surface_css }}`, et `on_bg` par la couleur calculée en A1. Le
-  contexte de rendu fournit : `bg_surface_css`, `on_bg_surface`, `accent_surface_css`, `on_accent_surface`
-  et `fond`.
+  contexte de rendu fournit : `bg_surface_css`, `accent_surface_css`, `on_accent_surface` et `fond` ; `on_bg`
+  et `accent_text` sont désormais calculés sur toute la surface fond.
 
 ### A3. Polices — nouveau module `agent/fonts.py`
 
-- `resolve(families) -> FontPlan(css: str, sources: dict[str, "local" | "google" | "aucune"])`.
+- `resolve(families) -> FontPlan(head: str, sources: dict[str, "local" | "google"], warnings: list[str])`.
 - **Fichier local** : `assets/fonts/<famille>.{woff2,woff,ttf,otf}`. On compare en ignorant les espaces et la
   casse, et on accepte aussi un nom suffixé (`PlayfairDisplay-Bold.ttf`). Le fichier est **embarqué en data URI**
   dans un `@font-face` : Firefox refuse de charger une police par `file://` depuis un autre dossier.
-- **Google Fonts** : un `<link>` **par famille** (`css2?family=<Nom>:wght@400;700&display=swap`), pour qu'une
-  famille introuvable ne casse pas les autres.
+- **Google Fonts** : deux `<link>` **par famille**, l'un sans graisse (`css2?family=<Nom>&display=swap`, toujours
+  valide), l'autre pour le gras (`:wght@700`) : une famille sans gras (ex. Bebas Neue) ou introuvable ne casse
+  pas les autres.
 - `assets/fonts/*` n'est pas versionné (polices de marque sous licence) ; un `.gitkeep` garde le dossier.
 - **Vérification à la capture** : après le chargement de la page et `document.fonts.ready`, chaque famille
   doit avoir au moins une `FontFace` au statut `loaded`.

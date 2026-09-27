@@ -155,3 +155,36 @@ Ajout d'un troisième type de zone : `role: list` (ex. `infographie_probleme`), 
   proposées par l'utilisateur (produit Dior) ont été écartées : marque concurrente réelle, photographie
   professionnelle sans doute protégée malgré l'absence de filigrane. Un vrai test de contenu attend de
   vraies photos avant/après consenties.
+
+## Rendu soigné et conforme Meta (2026-09-27)
+
+Règles et sources : [regles-et-design.md](regles-et-design.md). Décisions : [spec](specs/2026-09-27-rendu-et-textes-pub.md).
+
+- **Fonds** (`agent/backgrounds.py`) : `lineaire`, `mesh` ou `uni`, calculés en Python depuis la palette
+  (mélange OKLab), jamais saisis à la main. Chaque fond liste ses couleurs visibles : le texte (noir ou blanc)
+  est choisi sur la **pire** d'entre elles, et un dégradé qui ne laisse aucun texte lisible (moins de 3:1)
+  retombe en aplat avec un avertissement.
+- **Choix du fond** : `ad-agent run … --fond mesh` > `da.fond` du brief > `fond` de la fiche de format
+  (`mesh` pour les formats centrés produit, `lineaire` sinon). `auto` laisse la main au niveau suivant.
+  Le fond retenu est inscrit dans `manifest.json`.
+- **Polices** (`agent/fonts.py`) : un fichier dans `assets/fonts/` (non versionné, polices de marque) est
+  embarqué dans la page ; sinon la police est demandée à Google Fonts. La capture vérifie que chaque police
+  est réellement chargée et le signale dans `review.md` sinon. Un nom de police contenant autre chose que
+  lettres, chiffres, espaces et tirets est refusé.
+- **Résolution** : mise en page sur 1080 px de large, capture à l'échelle 4/3 : 4:5 → 1440 × 1800
+  (recommandation Meta), 1:1 → 1440 × 1440, 9:16 → 1440 × 2560.
+- **Zones de sécurité** : en 9:16, ni texte ni logo dans les 14 % du haut, les 35 % du bas et 6 % sur les
+  côtés (bandes recouvertes par l'interface des stories et reels) ; 7 % de marge ailleurs.
+  `--zones-securite` superpose ces bandes en rouge pour les vérifier (rendu de contrôle, à ne pas publier).
+
+## Textes de publication (2026-09-27)
+
+Pour chaque variante, jusqu'à 3 **textes principaux** (150 caractères maximum, avertissement sous 50) et
+3 **titres** (27 caractères maximum, rejetés au-delà, jamais tronqués), dans `manifest.json`
+(`variants[].publication`) et `review.md`.
+
+- **Hors ligne** (`agent/publication.py`) : phrases entières du brief (accroche, bénéfices, description,
+  offre), jamais coupées ni répétées ; le premier témoignage réel est cité mot pour mot avec son auteur.
+- **Claude** : textes adaptés à l'angle de la variante, revérifiés comme le reste (longueur, promesses
+  interdites, chiffres absents du brief) ; le témoignage reste ajouté par le code, jamais par le modèle ; si
+  rien ne passe, repli sur les textes hors ligne.

@@ -80,7 +80,7 @@ performe. C'est une piste pour les futurs formats, pas une règle démontrée (v
 
 ## 4. Ce que ça change dans Ad Agent
 
-| Règle ou enseignement | Aujourd'hui | Prévu (voir la [spec](specs/2026-09-27-rendu-et-textes-pub.md)) |
+| Règle ou enseignement | Avant | Fait (voir la [spec](specs/2026-09-27-rendu-et-textes-pub.md)) |
 |---|---|---|
 | Dégradés | 7 gabarits sur 8 en aplat | Fonds `lineaire` / `mesh` / `uni` calculés depuis la palette, choisis par format, brief ou CLI |
 | Contraste | Vérifié sur une couleur de fond | Vérifié sur chaque couleur du dégradé |

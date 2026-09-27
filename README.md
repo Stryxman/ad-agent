@@ -19,7 +19,7 @@ seulement un prototype :
 - Un **traitement d'image raisonné, pas juste branché** : le détourage automatique n'est déclenché que si
   l'image ne l'est pas déjà, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
   évité de justesse un modèle par défaut sous licence non commerciale.
-- **Tout est testé** : 50 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
+- **Tout est testé** : 90 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
   détourage, vrais rendus PNG) à chaque étape ajoutée.
 
 ## Comment ça marche
@@ -43,7 +43,7 @@ Le détail de chaque étape, avec le format exact de ses fichiers de sortie, est
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate                                      # valide briefs et formats
-pytest                                                  # 50 tests
+pytest                                                  # 90 tests
 ad-agent run briefs/example_soin_peau.yaml --no-png     # génère un run dans outputs/ (HTML)
 ```
 
@@ -59,6 +59,7 @@ ad-agent run briefs/example_soin_peau.yaml --writer claude
 pip install -e ".[render]"
 playwright install firefox   # ou chromium / webkit
 ad-agent run briefs/example_soin_peau.yaml --browser firefox
+ad-agent run briefs/example_soin_peau.yaml --browser firefox --fond mesh   # autre fond, brief inchangé
 ```
 
 **Détourage automatique** (optionnel ; sans lui, les images fournies sont utilisées telles quelles) :
@@ -77,8 +78,8 @@ briefs/      template de brief + exemples (niches beauté et tech)
 agent/       schémas, chargement, rédacteurs (hors ligne / Claude), rendu, CLI
 assets/      images produit (non versionnées)
 outputs/     runs générés (non versionnés)
-docs/        pipeline détaillé, protocole de curation
-tests/       50 tests
+docs/        pipeline détaillé, protocole de curation, règles Meta et design, specs
+tests/       90 tests
 ```
 
 ## Règles de la base de formats
@@ -99,12 +100,18 @@ aux niches où il excelle (liste vide = universel).
 - [x] Rédacteur hors ligne (déterministe, gratuit) et rédacteur Claude (sorties structurées, contrôlé)
 - [x] Détourage automatique local (rembg/u2net), déclenché seulement si nécessaire
 - [x] Zones à plusieurs lignes (infographies), assets étiquetés (avant/après)
-- [x] 50 tests (43 + 7 issus de la revue ci-dessous), plusieurs vérifications en conditions réelles
+- [x] Rendu soigné et conforme Meta : fonds en dégradé calculés depuis la palette, vraies polices de la DA,
+  1440 × 1800 en 4:5, zones de sécurité en 9:16 ([règles et sources](docs/regles-et-design.md))
+- [x] Textes de publication prêts pour Ads Manager (titres ≤ 27 caractères, textes principaux ≤ 150)
+- [x] 90 tests, plusieurs vérifications en conditions réelles
 - [x] Passe de revue sur `agent/` (8 constats corrigés : texte illisible sur fond accent, chemins
   d'assets non confinés à la racine du projet, incohérences produit/scène, etc.)
 
 ## Prochaines étapes (pas commencées, choix assumés)
 
+- **Nouvelles structures repérées** : écran partagé problèmes/solution, « eux vs nous », statistique en
+  exergue, bénéfices en étoile… à documenter avec la méthode de curation (liste et réserves dans
+  [regles-et-design.md](docs/regles-et-design.md#3-structures-créatives-repérées-pour-la-suite-de-la-base-de-formats)).
 - **Finition dans Canva** : Canva n'expose pas son détourage/sa génération d'image via son API pour
   développeurs (vérifié directement sur sa documentation), seulement dans son éditeur. L'usage prévu est
   donc une étape manuelle de finition après notre pipeline : pousser une variante dans un gabarit Canva
