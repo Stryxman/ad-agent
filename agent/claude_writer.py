@@ -18,7 +18,9 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from agent.schemas import AdFormat, Angle, Brief, HookType
-from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError, normalize
+from agent.checks import brief_facts, check_text, normalize  # réexportés (tests)
+from agent.checks import numbers as _numbers
+from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError
 
 DEFAULT_MODEL = "claude-opus-5"
 
@@ -60,45 +62,6 @@ class ZoneDraft(BaseModel):
 
 class CopyDraft(BaseModel):
     zones: list[ZoneDraft]
-
-
-# ---------------------------------------------------------------------- utilitaires
-
-
-def _numbers(text: str) -> set[str]:
-    return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", text)}
-
-
-def brief_facts(brief: Brief) -> dict[str, Any]:
-    """Ce que le modèle a le droit de savoir : pas de chemins de fichiers ni de couleurs."""
-    return {
-        "campagne": brief.name, "marque": brief.brand, "niche": brief.niche.value,
-        "objectif": brief.objective.value, "langue": brief.language,
-        "produit": {
-            "nom": brief.product.name, "description": brief.product.description,
-            "benefices": brief.product.benefits, "prix": brief.product.price,
-            "ancien_prix": brief.product.compare_at_price,
-        },
-        "audience": brief.audience, "offre": brief.offer,
-        "ton": brief.da.tone, "a_faire": brief.da.dos, "a_eviter": brief.da.donts,
-        "hook_impose": brief.hook_idea, "promesses_interdites": brief.forbidden_claims,
-    }
-
-
-def check_text(text: str, max_chars: int | None, brief: Brief, allowed_numbers: set[str]) -> str | None:
-    """Renvoie le motif de rejet d'un texte produit par le modèle, ou None s'il est acceptable."""
-    if not text.strip():
-        return "texte vide"
-    if max_chars is not None and len(text) > max_chars:
-        return f"trop long ({len(text)} > {max_chars} caractères)"
-    norm = normalize(text)
-    for claim in brief.forbidden_claims:
-        if normalize(claim) in norm:
-            return f"contient la promesse interdite « {claim} »"
-    invented = _numbers(text) - allowed_numbers
-    if invented:
-        return f"chiffre absent du brief : {sorted(invented)}"
-    return None
 
 
 # --------------------------------------------------------------------- le rédacteur

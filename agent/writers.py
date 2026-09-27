@@ -8,9 +8,9 @@ Une implémentation adossée à Claude viendra s'y brancher sans changer le pipe
 from __future__ import annotations
 
 import re
-import unicodedata
 from typing import Protocol
 
+from agent.checks import normalize  # réexporté (pipeline, rédacteur Claude)
 from agent.schemas import Angle, AdFormat, Brief, HookType, Zone
 
 CTA = {
@@ -24,11 +24,6 @@ NON_TEXT_ROLES = {"image", "logo"}
 
 class WriterError(RuntimeError):
     """Erreur du rédacteur (clé absente, réseau, réponse inexploitable), avec un message lisible."""
-
-
-def normalize(text: str) -> str:
-    """Minuscules sans accents, pour comparer des textes (promesses interdites, etc.)."""
-    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
 
 
 def fit_text(text: str, max_chars: int | None) -> str:
