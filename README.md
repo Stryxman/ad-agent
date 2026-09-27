@@ -134,10 +134,11 @@ aux niches où il excelle (liste vide = universel).
 - **Nouvelles structures repérées** : écran partagé problèmes/solution, « eux vs nous », statistique en
   exergue, bénéfices en étoile… à documenter avec la méthode de curation (liste et réserves dans
   [regles-et-design.md](docs/regles-et-design.md#3-structures-créatives-repérées-pour-la-suite-de-la-base-de-formats)).
-- **Finition dans Canva** : Canva n'expose pas son détourage/sa génération d'image via son API pour
-  développeurs (vérifié directement sur sa documentation), seulement dans son éditeur. L'usage prévu est
-  donc une étape manuelle de finition après notre pipeline : pousser une variante dans un gabarit Canva
-  (Autofill API, nécessite un compte Pro) pour l'ajuster visuellement avant publication.
+- **Automatiser la finition dans Canva** : testée à la main sur trois rendus de la démo. Chaque PNG,
+  importé dans Canva puis passé par sa séparation en calques, devient un design où titres, prix, bouton et
+  listes sont des textes modifiables un à un. Les visuels à fond calculé se convertissent bien, les photos
+  plein cadre moins (limite annoncée par Canva). Reste à brancher cette étape sur le `manifest.json` d'un
+  run, ou à passer par des gabarits Canva remplis automatiquement (Autofill, compte Pro).
 - **Génération de scènes (Nano Banana / Gemini)** : mettrait le produit détouré en situation plutôt que sur
   un simple fond de couleur. Volontairement pas construit pour l'instant : ce serait un second fournisseur
   d'IA (nouvelle clé, nouveau SDK, nouveaux coûts) pour un besoin déjà partiellement couvert par la finition
