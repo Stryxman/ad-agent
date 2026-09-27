@@ -19,7 +19,7 @@ seulement un prototype :
 - Un **traitement d'image raisonné, pas juste branché** : le détourage automatique n'est déclenché que si
   l'image ne l'est pas déjà, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
   évité de justesse un modèle par défaut sous licence non commerciale.
-- **Tout est testé** : 90 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
+- **Tout est testé** : 96 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
   détourage, vrais rendus PNG) à chaque étape ajoutée.
 
 ## Comment ça marche
@@ -43,7 +43,7 @@ Le détail de chaque étape, avec le format exact de ses fichiers de sortie, est
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate                                      # valide briefs et formats
-pytest                                                  # 90 tests
+pytest                                                  # 96 tests
 ad-agent run briefs/example_soin_peau.yaml --no-png     # génère un run dans outputs/ (HTML)
 ```
 
@@ -79,7 +79,7 @@ agent/       schémas, chargement, rédacteurs (hors ligne / Claude), rendu, CLI
 assets/      images produit (non versionnées)
 outputs/     runs générés (non versionnés)
 docs/        pipeline détaillé, protocole de curation, règles Meta et design, specs
-tests/       90 tests
+tests/       96 tests
 ```
 
 ## Règles de la base de formats
@@ -103,7 +103,7 @@ aux niches où il excelle (liste vide = universel).
 - [x] Rendu soigné et conforme Meta : fonds en dégradé calculés depuis la palette, vraies polices de la DA,
   1440 × 1800 en 4:5, zones de sécurité en 9:16 ([règles et sources](docs/regles-et-design.md))
 - [x] Textes de publication prêts pour Ads Manager (titres ≤ 27 caractères, textes principaux ≤ 150)
-- [x] 90 tests, plusieurs vérifications en conditions réelles
+- [x] 96 tests, plusieurs vérifications en conditions réelles
 - [x] Passe de revue sur `agent/` (8 constats corrigés : texte illisible sur fond accent, chemins
   d'assets non confinés à la racine du projet, incohérences produit/scène, etc.)
 
