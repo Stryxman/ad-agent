@@ -9,7 +9,6 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from agent.loader import ROOT
 from agent.schemas import AdFormat, Brief, Variant
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -62,16 +61,12 @@ def _data_uri(path: Path) -> str | None:
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
 
 
-def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str) -> dict:
+def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, product_image: Path | None) -> dict:
     w, h = RATIO_SIZES[ratio]
     palette = list(brief.da.palette) + DEFAULT_PALETTE[len(brief.da.palette):]
     bg, fg, accent = palette[0], palette[1], palette[2]
     fonts = brief.da.fonts
-    product_img = None
-    for asset in brief.assets:
-        product_img = _data_uri(ROOT / asset.path)
-        if product_img:
-            break
+    product_img = _data_uri(product_image) if product_image else None
     return {
         "w": w, "h": h, "u": w / 100, "ratio": ratio, "fmt_id": fmt.id,
         "bg": bg, "fg": fg, "accent": accent,
@@ -83,8 +78,9 @@ def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str) -> 
     }
 
 
-def render_html(variant: Variant, fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, out_dir: Path) -> Path:
-    html = _env.get_template(f"{fmt.id}.html").render(**_context(fmt, zones, brief, ratio))
+def render_html(variant: Variant, fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, out_dir: Path,
+                product_image: Path | None = None) -> Path:
+    html = _env.get_template(f"{fmt.id}.html").render(**_context(fmt, zones, brief, ratio, product_image))
     path = out_dir / f"{variant.id}_{fmt.id}_{ratio.replace(':', 'x')}.html"
     path.write_text(html, encoding="utf-8")
     return path

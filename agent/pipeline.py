@@ -12,6 +12,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
+from agent.assets import ensure_isolated
 from agent.loader import ROOT, load_all_formats, load_brief
 from agent.render import available_templates, render_html, screenshot_all
 from agent.schemas import (
@@ -169,6 +170,13 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     brief = load_brief(brief_path)
     _dump(run_dir / "brief.normalized.json", brief)
 
+    # 2. analyse des assets : isolé ou à détourer, avec mise en cache
+    asset_reports = [ensure_isolated(ROOT / a.path) for a in brief.assets]
+    _dump(run_dir / "assets.report.json", [a.model_dump(mode="json") for a in asset_reports])
+    product_image = next(
+        (Path(a.used_path) for a in asset_reports if a.action not in ("echec", "introuvable")), None
+    )
+
     # 3. angles
     try:
         angles = writer.propose_angles(brief)
@@ -198,7 +206,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         rendered[v.id] = {}
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
-                                    run_dir / "renders")
+                                    run_dir / "renders", product_image)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
     if render_png and jobs:

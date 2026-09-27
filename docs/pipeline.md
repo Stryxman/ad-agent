@@ -6,7 +6,7 @@ tout est traçable et rejouable.
 | # | Étape | Entrée | Sortie | Statut |
 |---|---|---|---|---|
 | 1 | Lecture du brief | `brief.yaml` + images | `brief.normalized.json` | fait |
-| 2 | Analyse des assets | images produit | `assets.report.json` | à faire |
+| 2 | Analyse des assets | images produit | `assets.report.json` | fait |
 | 3 | Stratégie (angles + hooks) | brief normalisé | `angles.json` | fait (rédacteur hors ligne ou Claude) |
 | 4 | Sélection des formats | angles + base de formats | `variant_plan.json` | fait |
 | 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ou Claude) |
@@ -84,3 +84,17 @@ Activé avec `--writer claude` ; nécessite `pip install -e ".[llm]"` et une cl�
 - **Confidentialité** : le modèle ne reçoit ni chemins de fichiers ni couleurs, seulement les faits du brief.
 - **Coût** : le nombre de tokens par run est affiché et consigné dans `manifest.json` (`usage`).
 - **Modèle** : `claude-opus-5` par défaut ; `--model` ou la variable `AD_AGENT_MODEL` pour en changer.
+
+## Le détourage automatique (`agent/assets.py`)
+- **Détection avant action** : `looks_isolated()` regarde si le bord de l'image est déjà une couleur quasi
+  uniforme, ou si un canal alpha existe déjà. Si oui, aucun détourage n'est lancé.
+- **Détourage local avec `rembg`**, uniquement si nécessaire : `pip install -e ".[assets]"`. Aucune clé,
+  aucun envoi réseau après le téléchargement (unique) du modèle.
+- **Modèle figé explicitement sur `u2net`** (Apache 2.0, réutilisable commercialement, ~176 Mo). Le défaut
+  de rembg ≥ 2.0 est `bria-rmbg` (~1 Go, licence NON commerciale, accord payant requis auprès de BRIA AI) :
+  ne jamais appeler `rembg.remove()` / `new_session()` sans préciser `u2net`.
+- **Mise en cache par empreinte du fichier source** (`assets/.cache/`), donc calculé une seule fois.
+- **Canva n'a pas d'API de détourage** : son « Background Remover » n'existe que dans son éditeur, pas dans
+  l'API pour développeurs (vérifié sur canva.dev).
+- **Limite connue** : sur un produit avec des reflets ou une part de transparence (verre, plastique brillant),
+  un léger halo peut rester sur le contour. Acceptable pour une démo, à revoir avant une vraie campagne.

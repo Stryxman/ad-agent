@@ -172,6 +172,14 @@ class AdFormat(BaseModel):
 # ------------------------------------------------------------- artefacts du pipeline
 
 
+class AssetAnalysis(BaseModel):
+    path: str
+    isolated: bool
+    action: str = Field(description="aucune | detoure | echec | introuvable")
+    used_path: str
+    note: str = ""
+
+
 class Angle(BaseModel):
     id: str
     hook_type: HookType

@@ -9,6 +9,7 @@ outputs/*
 !outputs/.gitkeep
 assets/products/*
 !assets/products/.gitkeep
+assets/.cache/
 
 # Ne jamais versionner les visuels de concurrents (droits d'auteur)
 formats/references/

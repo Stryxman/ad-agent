@@ -13,6 +13,7 @@ dependencies = [
 dev = ["pytest>=8.0"]
 render = ["playwright>=1.40"]
 llm = ["anthropic>=1.0"]
+assets = ["rembg>=2.0", "pillow>=10.0", "onnxruntime>=1.20"]
 
 [project.scripts]
 ad-agent = "agent.cli:main"

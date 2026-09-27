@@ -35,7 +35,7 @@ forbidden_claims:
 
 assets:
   - path: assets/products/serum_packshot.png
-    description: "packshot fond blanc, flacon face"
+    description: "photo lifestyle marbre, trois produits (test contraste réel)"
 
 variants_count: 6
 
