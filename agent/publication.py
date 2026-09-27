@@ -55,11 +55,18 @@ def filter_texts(texts: list[str], max_len: int, brief: Brief, allowed: set[str]
     return kept, warnings
 
 
-def testimonial_text(brief: Brief) -> str | None:
-    """Le premier avis réel, cité mot pour mot avec son auteur, s'il tient dans un texte principal."""
+def is_testimonial(brief: Brief, hook: str) -> bool:
+    """Vrai si l'accroche est un avis client réel (variante « preuve sociale ») : elle n'est alors jamais
+    réécrite ni mêlée au texte de la marque, seulement citée."""
+    return any(t.text == hook for t in brief.testimonials)
+
+
+def testimonial_text(brief: Brief, hook: str | None = None) -> str | None:
+    """L'avis réel porté par la variante (sinon le premier), cité mot pour mot avec son auteur, s'il tient
+    dans un texte principal."""
     if not brief.testimonials:
         return None
-    t = brief.testimonials[0]
+    t = next((t for t in brief.testimonials if t.text == hook), brief.testimonials[0])
     text = f"« {t.text} »" + (f" — {t.author}" if t.author else "")
     if len(text) > PRIMARY_MAX:
         return None
@@ -68,17 +75,19 @@ def testimonial_text(brief: Brief) -> str | None:
 
 
 def offline_publication(brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
-    allowed = allowed_numbers(brief) | numbers(hook)
-    heads_raw = [h for h in (hook, brief.offer or "", brief.product.name) if h and len(h) <= HEADLINE_MAX]
+    # un avis client porté en accroche n'est pas un texte de la marque : on ne le reprend que cité (plus bas)
+    lead = (brief.hook_idea or "") if is_testimonial(brief, hook) else hook
+    allowed = allowed_numbers(brief) | numbers(lead)
+    heads_raw = [h for h in (lead, brief.offer or "", brief.product.name) if h and len(h) <= HEADLINE_MAX]
     heads, warnings = filter_texts(heads_raw, HEADLINE_MAX, brief, allowed, "titre")
     if not heads:
         warnings.append(f"aucun titre de {HEADLINE_MAX} caractères maximum dans le brief")
 
-    prim_raw = [assemble([hook, *brief.product.benefits]),
+    prim_raw = [assemble([lead, *brief.product.benefits]),
                 assemble([brief.product.description, brief.offer or ""])]
     prims, w = filter_texts(prim_raw, PRIMARY_MAX, brief, allowed, "texte principal", min_len=PRIMARY_MIN)
     warnings += w
-    testimonial = testimonial_text(brief)
+    testimonial = testimonial_text(brief, hook)
     if testimonial and testimonial not in prims:
         prims = prims[:MAX_ITEMS - 1] + [testimonial]
     if not prims:

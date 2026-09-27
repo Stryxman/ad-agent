@@ -141,8 +141,11 @@ Nouveaux formats (roadmap, section 3 de la recherche), export CSV, finition Canv
 - **Textes principaux**, assemblés **par phrases entières** sans jamais couper une phrase :
   1. l'accroche puis les bénéfices ;
   2. la description puis l'offre ;
-  3. si le brief contient un témoignage, le premier cité **tel quel** entre guillemets avec son auteur, à
-     condition qu'il tienne en 150 caractères.
+  3. si le brief contient un témoignage, celui de la variante (sinon le premier) cité **tel quel** entre
+     guillemets avec son auteur, à condition qu'il tienne en 150 caractères.
+- Quand l'accroche de la variante **est** un avis client (angle « preuve sociale »), elle n'est ni reprise
+  comme titre ni mêlée aux phrases de la marque, et le rédacteur Claude ne la reçoit jamais : l'avis n'est
+  que cité (B3.3).
 - Si aucun texte ne passe les règles, la liste reste vide et un avertissement est consigné. Rien n'est inventé.
 
 ### B4. Rédacteur Claude

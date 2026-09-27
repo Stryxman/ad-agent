@@ -21,7 +21,8 @@ from agent.schemas import AdFormat, Angle, Brief, HookType, PublicationCopy
 from agent.checks import brief_facts, check_text, normalize  # réexportés (tests)
 from agent.checks import allowed_numbers, numbers as _numbers
 from agent.publication import (
-    HEADLINE_MAX, MAX_ITEMS, PRIMARY_MAX, PRIMARY_MIN, filter_texts, offline_publication, testimonial_text,
+    HEADLINE_MAX, MAX_ITEMS, PRIMARY_MAX, PRIMARY_MIN, filter_texts, is_testimonial, offline_publication,
+    testimonial_text,
 )
 from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError
 
@@ -255,6 +256,8 @@ class ClaudeWriter:
 
     def write_publication(self, brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
         base, base_warnings = offline_publication(brief, hook)  # repli déterministe
+        if is_testimonial(brief, hook):
+            return base, base_warnings  # un avis réel n'est jamais envoyé au modèle pour réécriture
         facts = brief_facts(brief)                              # sans les avis : ils restent au code
         prompt = (
             f"Brief (JSON) :\n{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
@@ -271,7 +274,7 @@ class ClaudeWriter:
         prims, w = filter_texts(draft.primary_texts, PRIMARY_MAX, brief, allowed, "texte principal",
                                 min_len=PRIMARY_MIN)
         warnings += w
-        testimonial = testimonial_text(brief)
+        testimonial = testimonial_text(brief, hook)
         if testimonial:
             prims = [p for p in prims if p != testimonial][:MAX_ITEMS - 1] + [testimonial]
         if not heads:

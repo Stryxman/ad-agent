@@ -62,3 +62,11 @@ def test_run_exposes_publication_in_manifest_and_review(tmp_path):
     assert all("publication" in v for v in manifest["variants"])
     assert any(v["publication"]["primary_texts"] for v in manifest["variants"])
     assert "Texte principal (" in (run_dir / "review.md").read_text(encoding="utf-8")
+
+
+def test_testimonial_hook_is_quoted_with_its_author_never_spliced_into_brand_copy():
+    t = BRIEF.testimonials[1]              # la variante « preuve sociale » porte cet avis-là
+    pub, _ = offline_publication(BRIEF, t.text)
+    assert t.text not in pub.headlines
+    assert all(t.text not in p or p == f"« {t.text} » — {t.author}" for p in pub.primary_texts)
+    assert f"« {t.text} » — {t.author}" in pub.primary_texts   # l'avis de CETTE variante, pas le premier

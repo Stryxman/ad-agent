@@ -222,3 +222,14 @@ def test_all_rejected_falls_back_to_offline_texts():
     pub, warnings = ClaudeWriter(client=client).write_publication(BRIEF, BRIEF.product.benefits[1])
     assert pub.headlines and pub.primary_texts
     assert any("hors ligne" in w for w in warnings)
+
+
+def test_testimonial_hook_is_never_sent_to_the_model():
+    t = BRIEF.testimonials[0]
+    client = FakeClient(publication=PublicationDraft(
+        headlines=[f"Le plaisir de {t.author.split(',')[0]}"],
+        primary_texts=["Elle adore : sa routine du matin est devenue un vrai plaisir avec ce sérum léger."],
+    ))
+    pub, _ = ClaudeWriter(client=client).write_publication(BRIEF, t.text)
+    assert client.calls == []                                   # aucun avis réel envoyé pour réécriture
+    assert f"« {t.text} » — {t.author}" in pub.primary_texts

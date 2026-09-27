@@ -280,7 +280,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
 
     # 7. rendu HTML puis PNG, un fichier par ratio
     notes = ["Rendu de contrôle des zones de sécurité : ne pas publier."] if safe_overlay else []
-    font_plan = resolve_fonts(brief.da.fonts)
+    font_plan = resolve_fonts(brief.da.fonts[:2])  # les gabarits n'utilisent que titre + texte
     copy_by_id = {c.variant_id: c for c in copies}
     rendered: dict[str, dict[str, dict[str, str]]] = {}
     jobs: list[tuple[str, str, Path]] = []

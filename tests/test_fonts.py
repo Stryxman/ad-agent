@@ -46,3 +46,27 @@ def test_unsafe_font_name_never_reaches_the_rendered_css(tmp_path):
     variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["4:5"], hook="x", score=1.0, rationale="r")
     html = render_html(variant, fmt, {"headline": "T"}, brief, "4:5", tmp_path).read_text(encoding="utf-8")
     assert "<script>" not in html and 'font-family: "Georgia"' in html
+
+
+def test_realistic_font_folder_uses_regular_and_bold_not_black_or_italic(tmp_path):
+    for style in ("Black", "Bold", "Italic", "Regular"):
+        (tmp_path / f"PlayfairDisplay-{style}.ttf").write_bytes(style.encode())
+    head = resolve(["Playfair Display"], tmp_path).head
+    import base64
+    b64 = lambda s: base64.b64encode(s.encode()).decode()
+    assert b64("Regular") in head and b64("Bold") in head
+    assert b64("Black") not in head and b64("Italic") not in head
+    assert "font-weight: 400" in head and "font-weight: 700" in head
+
+
+def test_variable_font_prefers_the_upright_file(tmp_path):
+    (tmp_path / "Inter-Italic-VariableFont_opsz,wght.ttf").write_bytes(b"italic")
+    (tmp_path / "Inter-VariableFont_opsz,wght.ttf").write_bytes(b"upright")
+    head = resolve(["Inter"], tmp_path).head
+    assert "dXByaWdodA==" in head and "aXRhbGlj" not in head and "font-weight: 100 900" in head
+
+
+def test_family_prefix_must_end_at_a_separator(tmp_path):
+    (tmp_path / "InterTight-Regular.ttf").write_bytes(b"x")
+    assert find_local("Inter", tmp_path) is None
+    assert resolve(["Inter"], tmp_path).sources == {"Inter": "google"}

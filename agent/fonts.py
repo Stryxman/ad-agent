@@ -39,14 +39,33 @@ def _key(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
-def find_local(family: str, fonts_dir: Path = FONTS_DIR) -> Path | None:
+def _tokens(p: Path) -> list[str]:
+    """« PlayfairDisplay-Bold » -> ["playfairdisplay", "bold"] ; « Inter_18pt-Regular » -> ["inter", "18pt", "regular"]."""
+    return re.split(r"[-_]", p.stem.lower())
+
+
+def local_faces(family: str, fonts_dir: Path = FONTS_DIR) -> list[tuple[Path, str]]:
+    """(fichier, graisse CSS) à embarquer pour une famille. Le nom de fichier doit commencer par la famille
+    suivie d'un séparateur (« Inter » ne prend pas « InterTight »). Un fichier variable droit couvre toutes
+    les graisses ; sinon Regular (400) et Bold (700). L'italique et les graisses extrêmes (Black...) ne sont
+    jamais pris pour la police entière."""
     if not fonts_dir.is_dir():
-        return None
+        return []
     key = _key(family)
-    files = sorted(p for p in fonts_dir.iterdir() if p.suffix.lower() in MIME)
-    exact = [p for p in files if _key(p.stem) == key]
-    prefixed = [p for p in files if _key(p.stem).startswith(key)]
-    return (exact or prefixed or [None])[0]
+    files = sorted(p for p in fonts_dir.iterdir() if p.suffix.lower() in MIME and _key(_tokens(p)[0]) == key)
+    upright = [p for p in files if "italic" not in p.stem.lower()]
+    variable = [p for p in upright if "variable" in p.stem.lower()]
+    if variable:
+        return [(variable[0], "100 900")]
+    regular = [p for p in upright if len(_tokens(p)) == 1 or "regular" in _tokens(p)[1:]]
+    bold = [p for p in upright if "bold" in _tokens(p)[1:]]
+    faces = ([(regular[0], "400")] if regular else []) + ([(bold[0], "700")] if bold else [])
+    return faces or ([((upright or files)[0], "400")] if files else [])
+
+
+def find_local(family: str, fonts_dir: Path = FONTS_DIR) -> Path | None:
+    faces = local_faces(family, fonts_dir)
+    return faces[0][0] if faces else None
 
 
 @dataclass
@@ -67,12 +86,13 @@ def resolve(families: Iterable[str], fonts_dir: Path = FONTS_DIR) -> FontPlan:
             continue
         if name in plan.sources:
             continue
-        local = find_local(name, fonts_dir)
+        local = local_faces(name, fonts_dir)
         if local:
-            ext = local.suffix.lower()
-            data = base64.b64encode(local.read_bytes()).decode()
-            faces.append(f'@font-face {{ font-family: "{name}"; src: url(data:{MIME[ext]};base64,{data}) '
-                         f'format("{CSS_FORMAT[ext]}"); font-weight: 100 900; font-display: block; }}')
+            for path, weight in local:
+                ext = path.suffix.lower()
+                data = base64.b64encode(path.read_bytes()).decode()
+                faces.append(f'@font-face {{ font-family: "{name}"; src: url(data:{MIME[ext]};base64,{data}) '
+                             f'format("{CSS_FORMAT[ext]}"); font-weight: {weight}; font-display: block; }}')
             plan.sources[name] = "local"
         else:
             family = quote(name).replace("%20", "+")

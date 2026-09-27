@@ -308,3 +308,14 @@ def test_safe_zone_variables_and_overlay_in_html(tmp_path):
 def test_control_run_is_flagged_in_review(tmp_path):
     run_dir = run(EXAMPLE, out_root=tmp_path, render_png=False, safe_overlay=True)
     assert "ne pas publier" in (run_dir / "review.md").read_text(encoding="utf-8")
+
+
+def test_only_fonts_used_by_the_templates_are_loaded_and_checked(monkeypatch, tmp_path):
+    import agent.pipeline as pipeline_mod
+
+    brief = load_brief(EXAMPLE)
+    brief = brief.model_copy(update={"da": brief.da.model_copy(update={"fonts": ["Playfair Display", "Inter", "Lora"]})})
+    monkeypatch.setattr(pipeline_mod, "load_brief", lambda _p: brief)
+    run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path, render_png=False)
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert set(manifest["fonts"]["sources"]) == {"Playfair Display", "Inter"}   # Lora n'est jamais utilisée
