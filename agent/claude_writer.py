@@ -17,9 +17,12 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from agent.schemas import AdFormat, Angle, Brief, HookType
+from agent.schemas import AdFormat, Angle, Brief, HookType, PublicationCopy
 from agent.checks import brief_facts, check_text, normalize  # réexportés (tests)
-from agent.checks import numbers as _numbers
+from agent.checks import allowed_numbers, numbers as _numbers
+from agent.publication import (
+    HEADLINE_MAX, MAX_ITEMS, PRIMARY_MAX, PRIMARY_MIN, filter_texts, offline_publication, testimonial_text,
+)
 from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError
 
 DEFAULT_MODEL = "claude-opus-5"
@@ -62,6 +65,11 @@ class ZoneDraft(BaseModel):
 
 class CopyDraft(BaseModel):
     zones: list[ZoneDraft]
+
+
+class PublicationDraft(BaseModel):
+    primary_texts: list[str]
+    headlines: list[str]
 
 
 # --------------------------------------------------------------------- le rédacteur
@@ -242,3 +250,36 @@ class ClaudeWriter:
             else:
                 zones[zone.id] = text
         return zones, warnings
+
+    # -- textes de publication ----------------------------------------------------------
+
+    def write_publication(self, brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
+        base, base_warnings = offline_publication(brief, hook)  # repli déterministe
+        facts = brief_facts(brief)                              # sans les avis : ils restent au code
+        prompt = (
+            f"Brief (JSON) :\n{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
+            f"Accroche de cette variante : « {hook} »\n\n"
+            "Écris les textes de publication Meta qui accompagnent le visuel, dans la langue du brief :\n"
+            f"- {MAX_ITEMS} textes principaux de {PRIMARY_MIN} à {PRIMARY_MAX} caractères, chacun sous un angle "
+            "différent, qui portent l'accroche ;\n"
+            f"- {MAX_ITEMS} titres de {HEADLINE_MAX} caractères maximum.\n"
+            "N'utilise que les faits du brief : aucun avis client, aucun chiffre absent du brief."
+        )
+        draft: PublicationDraft = self._ask(prompt, PublicationDraft)
+        allowed = allowed_numbers(brief) | _numbers(hook)
+        heads, warnings = filter_texts(draft.headlines, HEADLINE_MAX, brief, allowed, "titre")
+        prims, w = filter_texts(draft.primary_texts, PRIMARY_MAX, brief, allowed, "texte principal",
+                                min_len=PRIMARY_MIN)
+        warnings += w
+        testimonial = testimonial_text(brief)
+        if testimonial:
+            prims = [p for p in prims if p != testimonial][:MAX_ITEMS - 1] + [testimonial]
+        if not heads:
+            heads = base.headlines
+            warnings.append("aucun titre du modèle retenu : titres hors ligne")
+        if not [p for p in prims if p != testimonial]:
+            prims = base.primary_texts
+            warnings.append("aucun texte principal du modèle retenu : textes hors ligne")
+        if heads is base.headlines or prims is base.primary_texts:
+            warnings += base_warnings
+        return PublicationCopy(primary_texts=prims, headlines=heads), warnings

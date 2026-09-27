@@ -4,7 +4,7 @@ from agent.loader import BRIEFS_DIR, load_brief
 from agent.pipeline import run
 from agent.publication import HEADLINE_MAX, PRIMARY_MAX, offline_publication, sentence
 from agent.publication import testimonial_text as quoted_testimonial  # nom sans "test_" : pas collecté par pytest
-from agent.schemas import Testimonial
+from agent.schemas import Testimonial as Review  # alias : pytest collecte les classes « Test* »
 
 BRIEF = load_brief(BRIEFS_DIR / "example_soin_peau.yaml")
 HOOK = BRIEF.product.benefits[1]   # « Texture légère, non grasse » : 26 caractères
@@ -36,7 +36,7 @@ def test_offline_texts_only_contain_brief_sentences():
 
 
 def test_real_testimonial_is_quoted_verbatim_with_its_author():
-    brief = BRIEF.model_copy(update={"testimonials": [Testimonial(text="Léger et agréable.", author="Julie")]})
+    brief = BRIEF.model_copy(update={"testimonials": [Review(text="Léger et agréable.", author="Julie")]})
     pub, _ = offline_publication(brief, HOOK)
     assert "« Léger et agréable. » — Julie" in pub.primary_texts
 

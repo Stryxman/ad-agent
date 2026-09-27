@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from agent.claude_writer import (
-    AngleDraft, AnglesDraft, ClaudeWriter, CopyDraft, ZoneDraft, brief_facts, check_text,
+    AngleDraft, AnglesDraft, ClaudeWriter, CopyDraft, PublicationDraft, ZoneDraft, brief_facts, check_text,
 )
 from agent.loader import BRIEFS_DIR, load_all_formats, load_brief
 from agent.pipeline import run
@@ -19,15 +19,15 @@ FORMATS = {f.id: f for f in load_all_formats()}
 class FakeClient:
     """Imite `client.messages.parse` : renvoie des réponses préparées selon le schéma demandé."""
 
-    def __init__(self, angles=None, copy=None):
+    def __init__(self, angles=None, copy=None, publication=None):
         self.calls = []
-        self._angles, self._copy = angles, copy
+        self._by_schema = {AnglesDraft: angles, CopyDraft: copy,
+                           PublicationDraft: publication or PublicationDraft(primary_texts=[], headlines=[])}
         self.messages = SimpleNamespace(parse=self._parse)
 
     def _parse(self, **kwargs):
         self.calls.append(kwargs)
-        schema = kwargs["output_format"]
-        parsed = self._angles if schema is AnglesDraft else self._copy
+        parsed = self._by_schema[kwargs["output_format"]]
         usage = SimpleNamespace(input_tokens=100, output_tokens=50)
         return SimpleNamespace(parsed_output=parsed, stop_reason="end_turn", usage=usage)
 
@@ -191,3 +191,34 @@ def test_writer_error_leaves_no_empty_run_folder(tmp_path):
         run(BRIEFS_DIR / "example_soin_peau.yaml", writer=ClaudeWriter(client=Boom()), out_root=tmp_path,
             render_png=False)
     assert list(tmp_path.iterdir()) == []
+
+
+HOOK = "Un teint plus lumineux au quotidien"
+
+
+def test_publication_keeps_valid_model_texts_and_rejects_the_rest():
+    client = FakeClient(publication=PublicationDraft(
+        headlines=["Votre éclat quotidien", "Un titre bien trop long pour Meta, vraiment"],
+        primary_texts=["Une routine simple : un sérum léger à la vitamine C pour un teint plus lumineux au quotidien.",
+                       "Ce sérum guérit toutes les imperfections de la peau en douceur, chaque jour."],
+    ))
+    pub, warnings = ClaudeWriter(client=client).write_publication(BRIEF, HOOK)
+    assert pub.headlines == ["Votre éclat quotidien"]
+    assert pub.primary_texts[0].startswith("Une routine simple")
+    assert not any("guérit" in t for t in pub.primary_texts)
+    assert any("titre rejeté" in w for w in warnings) and any("guérit" in w for w in warnings)
+
+
+def test_testimonial_is_added_by_code_never_asked_to_the_model():
+    client = FakeClient(publication=PublicationDraft(headlines=["Votre éclat quotidien"], primary_texts=[]))
+    pub, _ = ClaudeWriter(client=client).write_publication(BRIEF, HOOK)
+    t = BRIEF.testimonials[0]
+    assert f"« {t.text} » — {t.author}" in pub.primary_texts
+    assert t.text not in client.calls[-1]["messages"][0]["content"]
+
+
+def test_all_rejected_falls_back_to_offline_texts():
+    client = FakeClient(publication=PublicationDraft(headlines=["x" * 40], primary_texts=["résultats garantis !"]))
+    pub, warnings = ClaudeWriter(client=client).write_publication(BRIEF, BRIEF.product.benefits[1])
+    assert pub.headlines and pub.primary_texts
+    assert any("hors ligne" in w for w in warnings)
