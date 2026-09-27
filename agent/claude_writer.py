@@ -24,8 +24,8 @@ DEFAULT_MODEL = "claude-opus-5"
 
 # Zones dont le contenu ne doit jamais être écrit par le modèle
 FIXED_ZONES = {"quote", "author", "stars", "price_old", "price_new", "product_name", "price_line", "offer_line"}
-# Rôles que le modèle peut rédiger
-CREATIVE_ROLES = {"headline", "subhead", "cta", "badge"}
+# Rôles que le modèle peut rédiger ("list" = plusieurs lignes courtes, ex. les symptômes d'une infographie)
+CREATIVE_ROLES = {"headline", "subhead", "cta", "badge", "list"}
 
 SYSTEM = """Tu es directeur de création, spécialisé dans les publicités statiques pour les réseaux sociaux.
 
@@ -209,7 +209,7 @@ class ClaudeWriter:
 
     # -- étape 5 : textes -------------------------------------------------------------
 
-    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
+    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str | list[str]], list[str]]:
         zones, warnings = self._offline.write_copy(brief, hook, fmt)  # base déterministe (prix, avis, repli)
         creative = [z for z in fmt.zones
                     if z.role in CREATIVE_ROLES and z.role not in NON_TEXT_ROLES and z.id not in FIXED_ZONES]
@@ -217,8 +217,11 @@ class ClaudeWriter:
             return zones, warnings
 
         facts = brief_facts(brief)
-        spec = [{"zone_id": z.id, "role": z.role, "longueur_max": z.max_chars, "obligatoire": z.required,
-                 "position": z.position} for z in creative]
+        spec = [{"zone_id": z.id, "role": z.role, "longueur_max_par_ligne": z.max_chars, "obligatoire": z.required,
+                 "position": z.position,
+                 **({"nombre_de_lignes": f"{z.list_min or 1}-{z.list_max or z.list_min or 1}"}
+                    if z.role == "list" else {})}
+                for z in creative]
         prompt = (
             f"Brief (JSON) :\n{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
             f"Format d'annonce : « {fmt.name} » — {fmt.description.strip()}\n"
@@ -226,21 +229,45 @@ class ClaudeWriter:
             f"Message à porter (accroche) : « {hook} »\n\n"
             f"Écris le texte de chacune de ces zones (JSON) :\n{json.dumps(spec, ensure_ascii=False, indent=2)}\n"
             "Pour une zone facultative sans intérêt, renvoie un texte vide. "
-            "Le texte du titre principal doit porter le message ci-dessus, reformulé si besoin."
+            "Le texte du titre principal doit porter le message ci-dessus, reformulé si besoin. "
+            "Pour une zone de rôle « list », renvoie une ligne par idée, séparées par de vrais retours à la "
+            "ligne (\\n), en respectant le nombre de lignes indiqué : une idée courte et concrète par ligne, "
+            "sans numérotation ni puce (déjà ajoutées par la mise en page)."
         )
         draft: CopyDraft = self._ask(prompt, CopyDraft)
 
         allowed_numbers = _numbers(json.dumps(facts, ensure_ascii=False)) | _numbers(hook)
-        limits = {z.id: z.max_chars for z in creative}
+        zone_by_id = {z.id: z for z in creative}
         for item in draft.zones:
-            if item.zone_id not in limits:
+            zone = zone_by_id.get(item.zone_id)
+            if zone is None:
+                continue
+            if zone.role == "list":
+                lines = [ln.strip() for ln in item.text.split("\n") if ln.strip()]
+                valid = []
+                for line in lines:
+                    reason = check_text(line, zone.max_chars, brief, allowed_numbers)
+                    if reason:
+                        warnings.append(f"zone « {zone.id} » : une ligne rejetée ({reason})")
+                    else:
+                        valid.append(line)
+                if zone.list_max and len(valid) > zone.list_max:
+                    warnings.append(f"zone « {zone.id} » : {len(valid)} lignes valides, tronqué à {zone.list_max}")
+                    valid = valid[:zone.list_max]
+                if zone.list_min and len(valid) < zone.list_min:
+                    warnings.append(
+                        f"zone « {zone.id} » : seulement {len(valid)} ligne(s) valide(s) sur "
+                        f"{zone.list_min} minimum, zone laissée vide"
+                    )
+                else:
+                    zones[zone.id] = valid
                 continue
             text = re.sub(r"\s+", " ", item.text).strip()
             if not text:
                 continue
-            reason = check_text(text, limits[item.zone_id], brief, allowed_numbers)
+            reason = check_text(text, zone.max_chars, brief, allowed_numbers)
             if reason:
-                warnings.append(f"zone « {item.zone_id} » : texte du modèle rejeté ({reason}), texte du brief conservé")
+                warnings.append(f"zone « {zone.id} » : texte du modèle rejeté ({reason}), texte du brief conservé")
             else:
-                zones[item.zone_id] = text
+                zones[zone.id] = text
         return zones, warnings

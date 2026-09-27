@@ -16,10 +16,12 @@ zones:
     role: headline
     max_chars: 70
     position: haut
-  - id: items
+  - id: lines
     role: list
     max_chars: 40
-    position: centre, 4 à 6 lignes avec icônes (max_chars s'applique à chaque ligne)
+    list_min: 4
+    list_max: 6
+    position: centre, 4 à 6 lignes avec icônes
   - id: illustration
     role: image
     required: false

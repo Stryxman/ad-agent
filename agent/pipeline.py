@@ -120,7 +120,17 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
         warnings = list(warnings)
         for z in fmt.zones:
             text = zones.get(z.id)
-            if text is not None and z.max_chars and len(text) > z.max_chars:
+            if isinstance(text, list):
+                fitted = []
+                for item in text:
+                    if z.max_chars and len(item) > z.max_chars:
+                        item = fit_text(item, z.max_chars)
+                        warnings.append(f"zone « {z.id} » : une ligne tronquée à {z.max_chars} caractères")
+                    fitted.append(item)
+                zones[z.id] = fitted
+                if z.list_min and len(fitted) < z.list_min:
+                    warnings.append(f"zone « {z.id} » : {len(fitted)} ligne(s), {z.list_min} attendues au minimum")
+            elif text is not None and z.max_chars and len(text) > z.max_chars:
                 zones[z.id] = fit_text(text, z.max_chars)
                 warnings.append(f"zone « {z.id} » tronquée à {z.max_chars} caractères")
             if z.required and z.role not in ("image", "logo") and not zones.get(z.id):
@@ -146,7 +156,8 @@ def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[Varia
         for ratio, paths in files.items():
             lines.append(f"- {ratio} : {', '.join(f'`{p}`' for p in paths.values())}")
         for zid, text in by_id[v.id].zones.items():
-            lines.append(f"- {zid} : {text}")
+            shown = " ; ".join(text) if isinstance(text, list) else text
+            lines.append(f"- {zid} : {shown}")
         for w in by_id[v.id].warnings:
             lines.append(f"- ⚠ {w}")
         lines.append("")

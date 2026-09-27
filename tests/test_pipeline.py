@@ -75,6 +75,13 @@ def test_tech_brief_unlocks_mode_tech_only_formats():
               for f in {v.format_id for v in beauty_plan.variants})  # toujours exclus en beauté
 
 
+def test_offline_writer_leaves_list_zone_empty_without_inventing_content():
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "infographie_probleme")
+    zones, _ = OfflineWriter().write_copy(brief, "Un vrai plaisir", fmt)
+    assert "lines" not in zones  # aucune source factuelle : le rédacteur hors ligne n'invente rien
+
+
 def test_readable_accent_falls_back_when_contrast_is_low():
     assert readable_on("#C9A27E", "#F4E9DD") == "#111111"          # or clair sur beige : illisible
     assert readable_on("#1B4D3E", "#F4E9DD") == "#1B4D3E"          # vert foncé : lisible

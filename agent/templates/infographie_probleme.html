@@ -1,0 +1,35 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--bg); color: {{ on_bg }}; align-items: stretch; text-align: left; gap: calc(var(--u) * 4); }
+  h1 { font-size: calc(var(--u) * 6); line-height: 1.2; text-align: left; }
+  .rows { display: flex; flex-direction: column; gap: calc(var(--u) * 3); flex: 1; }
+  .row { display: flex; align-items: flex-start; gap: calc(var(--u) * 2.4); }
+  .bullet { flex: 0 0 auto; width: calc(var(--u) * 4.4); height: calc(var(--u) * 4.4); border-radius: 50%;
+            background: var(--accent); color: {{ on_accent }}; display: flex; align-items: center;
+            justify-content: center; font-weight: 700; font-size: calc(var(--u) * 2.6); }
+  .row-text { font-size: calc(var(--u) * 3.2); line-height: 1.35; padding-top: calc(var(--u) * .3); }
+  .illustration { text-align: center; }
+  .illustration img { max-width: 60%; max-height: calc(var(--u) * 30); object-fit: contain; }
+  .foot { display: flex; align-items: center; justify-content: space-between; }
+  .cta { background: var(--accent); color: {{ on_accent }}; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <h1 class="display">{{ z.headline }}</h1>
+  <div class="rows">
+    {% for line in z.lines %}
+    <div class="row">
+      <div class="bullet">{{ loop.index }}</div>
+      <div class="row-text">{{ line }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if scene_img %}<div class="illustration"><img src="{{ scene_img }}" alt=""></div>{% endif %}
+  <div class="foot">
+    <span class="brand">{{ brand }}</span>
+    {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+  </div>
+</div>
+{% endblock %}

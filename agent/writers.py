@@ -77,10 +77,10 @@ class OfflineWriter:
             )
         return angles
 
-    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str], list[str]]:
+    def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str | list[str]], list[str]]:
         lang = CTA.get(brief.language, CTA["fr"])
         testimonial = next((t for t in brief.testimonials if t.text == hook), None)
-        zones: dict[str, str] = {}
+        zones: dict[str, str | list[str]] = {}
         for z in fmt.zones:
             text = self._zone_text(brief, hook, testimonial, z, lang)
             if text:

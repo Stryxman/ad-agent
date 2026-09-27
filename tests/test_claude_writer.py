@@ -92,6 +92,43 @@ def test_copy_rejects_text_over_the_zone_limit():
     assert any("trop long" in w for w in warnings)
 
 
+def test_list_zone_is_split_validated_and_capped():
+    fmt = FORMATS["infographie_probleme"]
+    client = FakeClient(copy=CopyDraft(zones=[ZoneDraft(
+        zone_id="lines",
+        text="\n".join([
+            "Une routine trop longue le matin",
+            "Des produits qui ne conviennent pas",
+            "Ce sérum guérit tout en une nuit",          # promesse interdite -> rejetée
+            "Résultats visibles en 9 jours",              # chiffre absent du brief -> rejetée
+            "Un flacon qui traîne dans le sac",
+            "Une texture qui laisse un film gras",
+            "Un rituel remis à plus tard",
+        ]),
+    )]))
+    zones, warnings = ClaudeWriter(client=client).write_copy(BRIEF, "Un vrai plaisir", fmt)
+    assert zones["lines"] == [
+        "Une routine trop longue le matin",
+        "Des produits qui ne conviennent pas",
+        "Un flacon qui traîne dans le sac",
+        "Une texture qui laisse un film gras",
+        "Un rituel remis à plus tard",
+    ]
+    assert len(zones["lines"]) == 5  # 7 lignes - 2 rejetées = 5, sous le plafond de 6
+    assert any("promesse interdite" in w for w in warnings)
+    assert any("chiffre" in w for w in warnings)
+
+
+def test_list_zone_below_minimum_is_left_empty():
+    fmt = FORMATS["infographie_probleme"]
+    client = FakeClient(copy=CopyDraft(zones=[ZoneDraft(
+        zone_id="lines", text="Une seule ligne valide ici",
+    )]))
+    zones, warnings = ClaudeWriter(client=client).write_copy(BRIEF, "Un vrai plaisir", fmt)
+    assert "lines" not in zones
+    assert any("minimum" in w for w in warnings)
+
+
 def test_check_text_rules():
     facts = json.dumps(brief_facts(BRIEF), ensure_ascii=False)
     from agent.claude_writer import _numbers

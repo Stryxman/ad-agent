@@ -11,7 +11,7 @@ tout est traçable et rejouable.
 | 4 | Sélection des formats | angles + base de formats | `variant_plan.json` | fait |
 | 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ou Claude) |
 | 6 | Composition visuelle | copy + assets + format | `layouts/*.json` + scènes générées | à faire |
-| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 6 formats sur 8 |
+| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 7 formats sur 8 |
 | 8 | Contrôle qualité | rendus + brief | `qa.report.json` | à faire |
 | 9 | Export et packaging | rendus | `manifest.json`, `review.md` | fait (Canva à venir) |
 | 10 | Retour terrain (v2) | choix + performances | mise à jour des scores de formats | à faire |
@@ -122,3 +122,18 @@ les formats réservés à `mode`/`tech` sans les mélanger avec la niche beauté
   ne sait référencer qu'une seule image produit, sans notion « avant »/« après ». Il faudrait étendre le
   schéma du brief pour accepter des assets étiquetés, ce que je n'ai pas voulu faire sans vraies photos
   à disposition pour tester.
+
+## Zones à plusieurs lignes (2026-09-27)
+
+Ajout d'un troisième type de zone : `role: list` (ex. `infographie_probleme`), avec `list_min`/`list_max` sur
+`Zone`. `VariantCopy.zones` accepte donc `str` ou `list[str]` selon la zone.
+- `OfflineWriter` ne remplit jamais ces zones (aucune source factuelle sans modèle) : la zone reste vide,
+  honnêtement, plutôt que d'inventer des lignes.
+- `ClaudeWriter` demande au modèle une ligne par idée (séparées par `\n`), vérifie chaque ligne comme un texte
+  normal (longueur, promesses interdites, chiffres inventés), et laisse la zone vide si trop peu de lignes
+  valides survivent au contrôle (`list_min`), plutôt que de livrer une liste tronquée trompeuse.
+- Le nom de zone `items` a été évité au profit de `lines` : dans les gabarits Jinja2, `z.items` intercepterait
+  la méthode `dict.items()` au lieu du contenu de la zone — un piège silencieux à connaître pour toute
+  future zone de ce type.
+- Testé en conditions réelles avec `--writer claude` (nécessite un brief à objectif `awareness`/`traffic`/`lead` :
+  `infographie_probleme` ne cible pas la conversion).

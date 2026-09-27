@@ -106,8 +106,10 @@ class Zone(BaseModel):
     id: str
     role: str = Field(description="headline | subhead | proof | cta | badge | image | ...")
     required: bool = True
-    max_chars: int | None = Field(default=None, description="Limite de texte, None pour une zone image")
+    max_chars: int | None = Field(default=None, description="Limite de texte par ligne, None pour une zone image")
     position: str = Field(default="", description="Indication libre: haut, centre gauche...")
+    list_min: int | None = Field(default=None, description="Nombre minimal de lignes, uniquement pour role='list'")
+    list_max: int | None = Field(default=None, description="Nombre maximal de lignes, uniquement pour role='list'")
 
 
 class AssetNeeds(BaseModel):
@@ -209,5 +211,5 @@ class VariantPlan(BaseModel):
 
 class VariantCopy(BaseModel):
     variant_id: str
-    zones: dict[str, str]
+    zones: dict[str, str | list[str]]  # str pour une zone normale, list[str] pour une zone role="list"
     warnings: list[str] = Field(default_factory=list)
