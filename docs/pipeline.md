@@ -86,8 +86,11 @@ Activé avec `--writer claude` ; nécessite `pip install -e ".[llm]"` et une cl�
 - **Modèle** : `claude-opus-5` par défaut ; `--model` ou la variable `AD_AGENT_MODEL` pour en changer.
 
 ## Le détourage automatique (`agent/assets.py`)
-- **Détection avant action** : `looks_isolated()` regarde si le bord de l'image est déjà une couleur quasi
-  uniforme, ou si un canal alpha existe déjà. Si oui, aucun détourage n'est lancé.
+- **Détection avant action** : `has_transparent_background()` vérifie si l'image a déjà un fond transparent.
+  Si oui, aucun détourage n'est lancé. Un fond uni mais opaque (packshot sur blanc) est détouré quand même :
+  sinon ce blanc apparaît en rectangle sur les fonds colorés des gabarits.
+- **Recadrage** : l'image détourée est recadrée sur le produit (le halo d'alpha infime laissé par le
+  détourage est ignoré), pour qu'il occupe toute la zone utile du gabarit.
 - **Détourage local avec `rembg`**, uniquement si nécessaire : `pip install -e ".[assets]"`. Aucune clé,
   aucun envoi réseau après le téléchargement (unique) du modèle.
 - **Modèle figé explicitement sur `u2net`** (Apache 2.0, réutilisable commercialement, ~176 Mo). Le défaut

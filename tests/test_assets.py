@@ -10,37 +10,22 @@ def _save(img: Image.Image, path) -> None:
     img.save(path)
 
 
-def test_solid_background_is_isolated(tmp_path):
-    img = Image.new("RGB", (200, 200), (240, 235, 225))
-    for x in range(60, 140):
-        for y in range(60, 140):
-            img.putpixel((x, y), (10, 10, 10))  # un "produit" sombre au centre
-    assert assets.looks_isolated(img)
-
-
-def test_transparent_background_is_isolated():
+def test_transparent_background_is_detected():
     img = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
     for x in range(30, 70):
         for y in range(30, 70):
             img.putpixel((x, y), (200, 100, 50, 255))
-    assert assets.looks_isolated(img)
+    assert assets.has_transparent_background(img)
+    assert not assets.has_transparent_background(Image.new("RGB", (100, 100), (250, 250, 250)))
 
 
-def test_busy_photo_is_not_isolated(tmp_path):
-    path = tmp_path / "photo.png"
-    img = Image.new("RGB", (200, 200))
-    px = img.load()
-    for x in range(200):
-        for y in range(200):
-            px[x, y] = ((x * 7) % 256, (y * 13) % 256, ((x + y) * 5) % 256)  # bruit sur tout le cadre
-    _save(img, path)
-    with Image.open(path) as loaded:
-        assert not assets.looks_isolated(loaded)
-
-
-def test_ensure_isolated_skips_detourage_when_already_isolated(tmp_path, monkeypatch):
+def test_ensure_isolated_skips_detourage_when_background_is_transparent(tmp_path, monkeypatch):
     path = tmp_path / "packshot.png"
-    _save(Image.new("RGB", (100, 100), (250, 250, 250)), path)
+    img = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    for x in range(30, 70):
+        for y in range(30, 70):
+            img.putpixel((x, y), (20, 20, 20, 255))
+    _save(img, path)
 
     def boom(_path):
         raise AssertionError("le détourage ne doit pas être appelé sur une image déjà isolée")
@@ -183,3 +168,18 @@ def test_crop_ignores_the_faint_alpha_halo_left_by_background_removal(tmp_path, 
     report = assets.ensure_isolated(path, cache_dir=tmp_path / "cache")
     with Image.open(report.used_path) as cropped:
         assert cropped.size == (54, 54)
+
+
+def test_uniform_opaque_background_is_still_detoured(tmp_path, monkeypatch):
+    """Un packshot sur fond blanc opaque est « isolé » pour l'œil, mais ce blanc apparaît en rectangle sur les
+    fonds colorés des gabarits : il faut le détourer quand même (seul un fond transparent s'en passe)."""
+    path = tmp_path / "casque_fond_blanc.png"
+    img = Image.new("RGB", (100, 100), (250, 250, 250))
+    for x in range(30, 70):
+        for y in range(30, 70):
+            img.putpixel((x, y), (20, 20, 20))
+    _save(img, path)
+    calls = []
+    monkeypatch.setattr(assets, "_remove_background", lambda p: calls.append(p) or b"detoure")
+    report = assets.ensure_isolated(path, cache_dir=tmp_path / "cache")
+    assert calls and report.action == "detoure"

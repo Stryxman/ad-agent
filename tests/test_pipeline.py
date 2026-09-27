@@ -347,17 +347,15 @@ def _render_titre(tmp_path, ratio, scene_image=None, product_image=None):
     return html, look
 
 
-def test_product_inset_stays_in_the_safe_area_flow(tmp_path):
-    # la miniature produit est un élément clé : dans le flux du bas de contenu (au-dessus de l'offre, donc
-    # hors bande basse), jamais positionnée depuis le bord du canevas
+def test_photo_format_does_not_repeat_the_scene_as_a_product_inset(tmp_path):
+    # le produit et la scène viennent du même fichier : une miniature ne ferait que dupliquer la photo
     from PIL import Image
 
     photo, produit = tmp_path / "scene.png", tmp_path / "produit.png"
     Image.new("RGB", (120, 200), (235, 235, 230)).save(photo)
     Image.new("RGBA", (40, 80), (200, 100, 50, 255)).save(produit)
     html, _ = _render_titre(tmp_path, "9:16", scene_image=photo, product_image=produit)
-    bottom = html.index('<div class="bottom">')
-    assert bottom < html.index('class="product-inset"') < html.index('class="offer"')
+    assert "product-inset" not in html
 
 
 def test_title_without_photo_uses_the_readable_colour_of_the_accent_surface(tmp_path):

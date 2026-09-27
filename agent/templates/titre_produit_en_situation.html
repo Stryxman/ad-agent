@@ -23,9 +23,6 @@
            border-radius: 999px; }
   .ph-scene { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
               background: {{ accent_surface_css }}; color: {{ on_accent_surface }}; font-size: calc(var(--u) * 4); }
-  /* élément clé : dans le flux du bas de contenu (au-dessus de l'offre), donc toujours hors bande basse */
-  .product-inset { align-self: flex-end; width: calc(var(--u) * 16); height: calc(var(--u) * 16); }
-  .product-inset img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
 </style>
 {% endblock %}
 {% block body %}
@@ -37,7 +34,6 @@
     <div class="logo brand">{{ brand }}</div>
     <h1 class="display">{{ z.headline }}</h1>
     <div class="bottom">
-      {% if product_img %}<div class="product-inset"><img src="{{ product_img }}" alt="{{ product_name }}"></div>{% endif %}
       {% if z.offer_line %}<span class="offer">{{ z.offer_line }}</span>{% endif %}
     </div>
   </div>

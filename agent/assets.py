@@ -1,9 +1,10 @@
 """Étape 2 : analyse des assets produit.
 
-Détermine si une image est déjà isolée (fond uni ou transparent) et, sinon, la détoure automatiquement
+Détermine si une image a déjà un fond transparent et, sinon, la détoure automatiquement
 avec `rembg` (traitement local, gratuit, sans clé ni abonnement — l'API publique de Canva ne l'expose pas
-aux développeurs, seulement dans son éditeur). Le détourage n'est appelé QUE si l'image ne semble pas
-déjà isolée, et son résultat est mis en cache par empreinte du fichier source : il n'est calculé qu'une fois.
+aux développeurs, seulement dans son éditeur). Le détourage n'est appelé QUE si l'image n'a pas déjà un
+fond transparent (un fond blanc opaque se verrait en rectangle sur les fonds colorés), et son résultat est
+mis en cache par empreinte du fichier source : il n'est calculé qu'une fois.
 """
 
 from __future__ import annotations
@@ -17,44 +18,15 @@ from PIL import Image
 from agent.schemas import AssetAnalysis
 
 CACHE_DIR = Path(__file__).resolve().parent.parent / "assets" / ".cache"
-BORDER_FRACTION = 0.06        # épaisseur du bandeau de bord analysé
-UNIFORMITY_THRESHOLD = 0.90   # part du bord qui doit être proche de la couleur dominante
-COLOR_TOLERANCE = 18          # écart de couleur toléré (par canal, sur 255)
 
 
-def _border_pixels(img: Image.Image) -> list[tuple[int, int, int]]:
-    rgb = img.convert("RGB")
-    w, h = rgb.size
-    bw, bh = max(1, int(w * BORDER_FRACTION)), max(1, int(h * BORDER_FRACTION))
-    px = rgb.load()
-    pixels = []
-    for x in range(w):
-        for y in list(range(0, bh)) + list(range(h - bh, h)):
-            pixels.append(px[x, y])
-    for y in range(h):
-        for x in list(range(0, bw)) + list(range(w - bw, w)):
-            pixels.append(px[x, y])
-    return pixels
-
-
-def looks_isolated(img: Image.Image) -> bool:
-    """Vrai si l'image a déjà un fond transparent, ou un bord de couleur quasi uniforme (packshot studio)."""
+def has_transparent_background(img: Image.Image) -> bool:
+    """Vrai si l'image a déjà un fond transparent : elle se pose telle quelle sur n'importe quel fond.
+    Un fond uni mais opaque (packshot sur blanc) ne suffit pas : ce blanc apparaîtrait en rectangle sur les
+    fonds colorés des gabarits, il faut donc le détourer aussi."""
     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
-        alpha = img.convert("RGBA").split()[-1]
-        if alpha.getextrema()[0] < 250:  # une partie du bord est déjà transparente
-            return True
-    border = _border_pixels(img)
-    if not border:
-        return False
-    n = len(border)
-    r = sorted(p[0] for p in border)[n // 2]
-    g = sorted(p[1] for p in border)[n // 2]
-    b = sorted(p[2] for p in border)[n // 2]
-    close = sum(
-        1 for (pr, pg, pb) in border
-        if abs(pr - r) <= COLOR_TOLERANCE and abs(pg - g) <= COLOR_TOLERANCE and abs(pb - b) <= COLOR_TOLERANCE
-    )
-    return (close / n) >= UNIFORMITY_THRESHOLD
+        return img.convert("RGBA").getchannel("A").getextrema()[0] < 250
+    return False
 
 
 # Modèle figé explicitement : le défaut de rembg (2.0.x) est "bria-rmbg", sous licence NON commerciale
@@ -115,9 +87,9 @@ def ensure_isolated(path: Path, cache_dir: Path = CACHE_DIR) -> AssetAnalysis:
 
     try:
         with Image.open(path) as img:
-            if looks_isolated(img):
+            if has_transparent_background(img):
                 return AssetAnalysis(path=str(path), isolated=True, action="aucune",
-                                     used_path=str(path), note="fond déjà uniforme ou transparent")
+                                     used_path=str(path), note="fond déjà transparent")
     except Exception as e:
         # image corrompue/illisible par PIL : signalé comme un échec de détourage, pas un crash du run
         return AssetAnalysis(path=str(path), isolated=False, action="echec",

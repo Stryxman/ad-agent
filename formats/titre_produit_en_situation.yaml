@@ -19,10 +19,9 @@ zones:
   - id: scene
     role: image
     position: plein cadre
-  - id: product
-    role: image
-    required: false
-    position: dans la scène, au premier plan
+  # Pas de zone « product » séparée : le produit est dans la photo de scène, et l'image « produit » vient du
+  # même fichier (détouré). Une miniature ne ferait que dupliquer la photo ; à revoir si un brief fournit un
+  # jour un packshot distinct de la scène.
   - id: offer_line
     role: subhead
     max_chars: 60
