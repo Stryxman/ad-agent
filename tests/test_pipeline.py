@@ -56,6 +56,25 @@ def test_plan_respects_variant_count_and_ratios():
     assert len({(v.format_id, v.hook) for v in plan.variants}) == len(plan.variants)  # pas de doublon
 
 
+def test_offline_writer_fills_new_special_zones():
+    brief = load_brief(EXAMPLE)
+    writer_ = OfflineWriter()
+    fmt = next(f for f in load_all_formats() if f.id == "carte_produit_catalogue")
+    zones, _ = writer_.write_copy(brief, brief.offer, fmt)
+    assert zones["product_name"] == brief.product.name  # jamais reformulé
+    assert brief.product.price in zones["price_line"]
+
+
+def test_tech_brief_unlocks_mode_tech_only_formats():
+    tech_brief = load_brief(BRIEFS_DIR / "example_ecouteurs_tech.yaml")
+    plan = _plan(tech_brief)
+    selected = {v.format_id for v in plan.variants}
+    assert "carte_produit_catalogue" in selected or "spotlight_fonctionnalite" in selected
+    beauty_plan = _plan(load_brief(EXAMPLE))
+    assert all(f not in {"carte_produit_catalogue", "spotlight_fonctionnalite"}
+              for f in {v.format_id for v in beauty_plan.variants})  # toujours exclus en beauté
+
+
 def test_readable_accent_falls_back_when_contrast_is_low():
     assert readable_on("#C9A27E", "#F4E9DD") == "#111111"          # or clair sur beige : illisible
     assert readable_on("#1B4D3E", "#F4E9DD") == "#1B4D3E"          # vert foncé : lisible

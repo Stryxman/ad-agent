@@ -176,6 +176,9 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     product_image = next(
         (Path(a.used_path) for a in asset_reports if a.action not in ("echec", "introuvable")), None
     )
+    # la photo d'origine (avant détourage), pour les gabarits qui veulent une scène plein cadre plutôt
+    # qu'un produit isolé sur fond uni
+    scene_image = next((ROOT / a.path for a in brief.assets if (ROOT / a.path).is_file()), None)
 
     # 3. angles
     try:
@@ -206,7 +209,7 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         rendered[v.id] = {}
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
-                                    run_dir / "renders", product_image)
+                                    run_dir / "renders", product_image, scene_image)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
     if render_png and jobs:

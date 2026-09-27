@@ -1,0 +1,22 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: linear-gradient(160deg, var(--bg), var(--fg) 140%); color: {{ on_bg }};
+            justify-content: space-between; gap: calc(var(--u) * 3); }
+  .top { display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 1.2); }
+  h1 { font-size: calc(var(--u) * 5.2); line-height: 1.15; font-weight: 700; }
+  .sub { font-size: calc(var(--u) * 3.2); opacity: .75; }
+  .cta { background: var(--accent); color: {{ on_accent }}; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <div class="top">
+    <div class="brand">{{ brand }}</div>
+    <h1 class="display">{{ z.headline }}</h1>
+    {% if z.product_name %}<div class="sub">{{ z.product_name }}</div>{% endif %}
+  </div>
+  {{ product() }}
+  {% if z.cta %}<span class="cta">{{ z.cta }}</span>{% endif %}
+</div>
+{% endblock %}

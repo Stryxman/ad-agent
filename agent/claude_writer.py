@@ -23,7 +23,7 @@ from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError, normalize
 DEFAULT_MODEL = "claude-opus-5"
 
 # Zones dont le contenu ne doit jamais être écrit par le modèle
-FIXED_ZONES = {"quote", "author", "stars", "price_old", "price_new"}
+FIXED_ZONES = {"quote", "author", "stars", "price_old", "price_new", "product_name", "price_line", "offer_line"}
 # Rôles que le modèle peut rédiger
 CREATIVE_ROLES = {"headline", "subhead", "cta", "badge"}
 

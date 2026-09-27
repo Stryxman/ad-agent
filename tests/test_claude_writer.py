@@ -103,6 +103,17 @@ def test_check_text_rules():
     assert "chiffre" in check_text("En 9 semaines", 40, BRIEF, allowed)
 
 
+def test_product_name_and_price_line_are_never_rewritten_by_the_model():
+    fmt = FORMATS["carte_produit_catalogue"]
+    client = FakeClient(copy=CopyDraft(zones=[
+        ZoneDraft(zone_id="product_name", text="Le meilleur sérum du monde"),  # doit être ignoré
+        ZoneDraft(zone_id="price_line", text="gratuit"),                       # doit être ignoré
+    ]))
+    zones, _ = ClaudeWriter(client=client).write_copy(BRIEF, BRIEF.offer, fmt)
+    assert zones["product_name"] == BRIEF.product.name
+    assert BRIEF.product.price in zones["price_line"]
+
+
 def test_usage_is_tracked():
     client = FakeClient(angles=_angles(AngleDraft(hook_type="benefit", rationale="r", hooks=["Texture légère"])))
     writer = ClaudeWriter(client=client)

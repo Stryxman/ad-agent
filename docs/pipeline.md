@@ -11,7 +11,7 @@ tout est traçable et rejouable.
 | 4 | Sélection des formats | angles + base de formats | `variant_plan.json` | fait |
 | 5 | Copywriting | plan de variantes | `copy.json` | fait (rédacteur hors ligne ou Claude) |
 | 6 | Composition visuelle | copy + assets + format | `layouts/*.json` + scènes générées | à faire |
-| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 3 formats |
+| 7 | Rendu HTML → PNG | copy + format + DA | `renders/*.html` (+ `.png`) | fait pour 6 formats sur 8 |
 | 8 | Contrôle qualité | rendus + brief | `qa.report.json` | à faire |
 | 9 | Export et packaging | rendus | `manifest.json`, `review.md` | fait (Canva à venir) |
 | 10 | Retour terrain (v2) | choix + performances | mise à jour des scores de formats | à faire |
@@ -98,3 +98,27 @@ Activé avec `--writer claude` ; nécessite `pip install -e ".[llm]"` et une cl�
   l'API pour développeurs (vérifié sur canva.dev).
 - **Limite connue** : sur un produit avec des reflets ou une part de transparence (verre, plastique brillant),
   un léger halo peut rester sur le contour. Acceptable pour une démo, à revoir avant une vraie campagne.
+
+## Gabarits ajoutés (2026-09-27) : 6 formats sur 8 rendus
+
+`titre_produit_en_situation`, `carte_produit_catalogue`, `spotlight_fonctionnalite` s'ajoutent aux 3
+premiers. Le rendu distingue maintenant deux images possibles par produit :
+- `product_img` : la version **détourée** (fond uni/dégradé, ex. `offre_prix_barre`, `spotlight_fonctionnalite`).
+- `scene_img` : la photo **d'origine, non détourée** (scène plein cadre, ex. `titre_produit_en_situation`,
+  `carte_produit_catalogue`) — un fond détouré serait incohérent en arrière-plan plein cadre.
+
+Trois nouvelles zones factuelles, jamais reformulées par un rédacteur (`OfflineWriter` comme `ClaudeWriter`) :
+`product_name` (nom exact du produit), `price_line` (« à partir de X € »), `offer_line` (l'offre telle quelle).
+
+Un second brief d'exemple, `briefs/example_ecouteurs_tech.yaml` (niche tech, sans asset), permet de tester
+les formats réservés à `mode`/`tech` sans les mélanger avec la niche beauté.
+
+## Formats encore sans gabarit : pourquoi
+
+- **`infographie_probleme`** : sa zone `items` attend 4 à 6 lignes distinctes. Le schéma actuel ne gère
+  qu'un seul texte par zone — il faut d'abord faire évoluer `Zone`/`Writer` pour des zones à plusieurs
+  lignes, pas seulement écrire du HTML.
+- **`avant_apres_beaute`** : exige explicitement de vraies photos avant/après, jamais générées. Le brief
+  ne sait référencer qu'une seule image produit, sans notion « avant »/« après ». Il faudrait étendre le
+  schéma du brief pour accepter des assets étiquetés, ce que je n'ai pas voulu faire sans vraies photos
+  à disposition pour tester.

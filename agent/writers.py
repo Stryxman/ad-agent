@@ -103,6 +103,12 @@ class OfflineWriter:
             return "★" * testimonial.rating if testimonial and testimonial.rating else None
         if zone.id == "title":
             return None  # titre d'accroche facultatif : demande un vrai rédacteur
+        if zone.id == "product_name":
+            return brief.product.name  # identifiant factuel : jamais reformulé
+        if zone.id == "price_line":
+            return f"à partir de {brief.product.price}" if brief.product.price else None
+        if zone.id == "offer_line":
+            return brief.offer
         if zone.role == "headline":
             return hook
         if zone.role == "subhead":

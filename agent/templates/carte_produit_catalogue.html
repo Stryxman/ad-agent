@@ -1,0 +1,27 @@
+{% extends "_base.html" %}
+{% block style %}
+<style>
+  .canvas { background: var(--bg); color: {{ on_bg }}; padding: calc(var(--u) * 6) calc(var(--u) * 6) calc(var(--u) * 4);
+            justify-content: flex-start; gap: calc(var(--u) * 3); }
+  .band { text-align: left; width: 100%; }
+  .pname { font-size: calc(var(--u) * 4.4); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .price { font-size: calc(var(--u) * 3.2); opacity: .7; margin-top: calc(var(--u) * .6); }
+  .photo-box { flex: 1; width: 100%; border-radius: calc(var(--u) * 2); overflow: hidden; background: var(--accent);
+               display: flex; align-items: center; justify-content: center; }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-box .ph { border: none; color: {{ on_accent }}; opacity: .8; }
+</style>
+{% endblock %}
+{% block body %}
+<div class="canvas">
+  <div class="band">
+    <div class="pname display">{{ z.product_name }}</div>
+    {% if z.price_line %}<div class="price">{{ z.price_line }}</div>{% endif %}
+  </div>
+  <div class="photo-box">
+    {% if scene_img %}<img src="{{ scene_img }}" alt="{{ product_name }}">
+    {% else %}<div class="ph">{{ product_name }}</div>{% endif %}
+  </div>
+  <div class="brand">{{ brand }}</div>
+</div>
+{% endblock %}

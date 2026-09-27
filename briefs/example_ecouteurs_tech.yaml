@@ -1,0 +1,37 @@
+# Second brief d'exemple, niche tech : sert à tester les formats réservés à mode/tech
+# (carte_produit_catalogue, spotlight_fonctionnalite) sans confondre avec la niche beauté.
+name: Écouteurs sans fil — lancement
+brand: Nomad Audio
+niche: tech
+objective: conversion
+
+product:
+  name: Écouteurs Nomad Air
+  description: Écouteurs sans fil, réduction de bruit active, 30h d'autonomie avec le boîtier.
+  benefits:
+    - Réduction de bruit active en un geste
+    - 30h d'autonomie avec le boîtier de charge
+    - Résistants à la transpiration (IPX4)
+  price: "79 €"
+  compare_at_price: "99 €"
+
+audience: "Sportifs urbains 20-35 ans, utilisent leurs écouteurs au quotidien et en course à pied"
+offer: "-20 % pour le lancement"
+
+da:
+  palette: ["#12131A", "#F5F5F0", "#4FD1C5"]
+  fonts: ["Inter", "Inter"]
+  tone: direct, technique, sans emphase inutile
+  dos: ["contraste fort", "chiffres précis"]
+  donts: ["superlatifs vagues"]
+
+hook_idea: null
+
+ratios: ["4:5", "9:16", "1:1"]
+language: fr
+forbidden_claims: []
+
+assets: []   # pas encore de vraie photo produit : le rendu utilisera le cadre en pointillés
+
+testimonials: []
+variants_count: 6

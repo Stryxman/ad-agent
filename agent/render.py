@@ -61,12 +61,12 @@ def _data_uri(path: Path) -> str | None:
     return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode()}"
 
 
-def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, product_image: Path | None) -> dict:
+def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, product_image: Path | None,
+            scene_image: Path | None) -> dict:
     w, h = RATIO_SIZES[ratio]
     palette = list(brief.da.palette) + DEFAULT_PALETTE[len(brief.da.palette):]
     bg, fg, accent = palette[0], palette[1], palette[2]
     fonts = brief.da.fonts
-    product_img = _data_uri(product_image) if product_image else None
     return {
         "w": w, "h": h, "u": w / 100, "ratio": ratio, "fmt_id": fmt.id,
         "bg": bg, "fg": fg, "accent": accent,
@@ -74,13 +74,18 @@ def _context(fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, pro
         "accent_text": readable_on(accent, bg),
         "font_display": fonts[0] if fonts else "Georgia", "font_body": fonts[1] if len(fonts) > 1 else "Helvetica",
         "brand": brief.brand or brief.product.name, "product_name": brief.product.name,
-        "product_img": product_img, "z": zones,
+        # produit détouré (fond uni/dégradé) vs. photo d'origine (scène plein cadre, fond conservé)
+        "product_img": _data_uri(product_image) if product_image else None,
+        "scene_img": _data_uri(scene_image) if scene_image else None,
+        "z": zones,
     }
 
 
 def render_html(variant: Variant, fmt: AdFormat, zones: dict[str, str], brief: Brief, ratio: str, out_dir: Path,
-                product_image: Path | None = None) -> Path:
-    html = _env.get_template(f"{fmt.id}.html").render(**_context(fmt, zones, brief, ratio, product_image))
+                product_image: Path | None = None, scene_image: Path | None = None) -> Path:
+    html = _env.get_template(f"{fmt.id}.html").render(
+        **_context(fmt, zones, brief, ratio, product_image, scene_image)
+    )
     path = out_dir / f"{variant.id}_{fmt.id}_{ratio.replace(':', 'x')}.html"
     path.write_text(html, encoding="utf-8")
     return path
