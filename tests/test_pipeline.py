@@ -319,3 +319,19 @@ def test_only_fonts_used_by_the_templates_are_loaded_and_checked(monkeypatch, tm
     run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path, render_png=False)
     manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
     assert set(manifest["fonts"]["sources"]) == {"Playfair Display", "Inter"}   # Lora n'est jamais utilisée
+
+
+def test_white_title_over_a_photo_gets_a_dark_top_veil(tmp_path):
+    # le titre et la marque sont blancs, posés en haut de la photo : sur une photo claire (marbre, ciel),
+    # ils deviennent illisibles sans voile sombre derrière eux
+    from PIL import Image
+
+    photo = tmp_path / "photo_claire.png"
+    Image.new("RGB", (120, 200), (235, 235, 230)).save(photo)
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["9:16"], hook="x", score=1.0, rationale="r")
+    html = render_html(variant, fmt, {"headline": "Titre"}, brief, "9:16", tmp_path,
+                       scene_image=photo).read_text(encoding="utf-8")
+    assert 'class="scrim-top"' in html
+    assert "linear-gradient(to bottom, rgba(0,0,0," in html

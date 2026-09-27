@@ -5,6 +5,9 @@
   .scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .scrim { position: absolute; left: 0; right: 0; bottom: 0; height: 55%;
            background: linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,0)); }
+  /* voile haut : la marque et le titre sont blancs, posés en haut de la photo (illisibles sur photo claire) */
+  .scrim-top { position: absolute; left: 0; right: 0; top: 0; height: 62%;   /* jusqu'au titre, placé à mi-hauteur */
+               background: linear-gradient(to bottom, rgba(0,0,0,.55), rgba(0,0,0,.38) 70%, rgba(0,0,0,0)); }
   .content { position: relative; z-index: 1; width: 100%; height: 100%; display: flex; flex-direction: column;
              justify-content: space-between; box-sizing: border-box;
              padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
@@ -27,6 +30,7 @@
   {% else %}<div class="ph-scene">{{ product_name }}</div>{% endif %}
   {% if product_img %}<div class="product-inset"><img src="{{ product_img }}" alt="{{ product_name }}"></div>{% endif %}
   <div class="scrim"></div>
+  {% if scene_img %}<div class="scrim-top"></div>{% endif %}
   <div class="content">
     <div class="logo brand">{{ brand }}</div>
     <h1 class="display">{{ z.headline }}</h1>
