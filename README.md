@@ -19,7 +19,7 @@ seulement un prototype :
 - Un **traitement d'image raisonné, pas juste branché** : le détourage automatique n'est déclenché que si
   l'image ne l'est pas déjà, et le modèle utilisé a été délibérément choisi (voir plus bas) après avoir
   évité de justesse un modèle par défaut sous licence non commerciale.
-- **Tout est testé** : 43 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
+- **Tout est testé** : 50 tests, plus des vérifications en conditions réelles (vrais appels à Claude, vrai
   détourage, vrais rendus PNG) à chaque étape ajoutée.
 
 ## Comment ça marche
@@ -43,7 +43,7 @@ Le détail de chaque étape, avec le format exact de ses fichiers de sortie, est
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ad-agent validate                                      # valide briefs et formats
-pytest                                                  # 43 tests
+pytest                                                  # 50 tests
 ad-agent run briefs/example_soin_peau.yaml --no-png     # génère un run dans outputs/ (HTML)
 ```
 
@@ -78,7 +78,7 @@ agent/       schémas, chargement, rédacteurs (hors ligne / Claude), rendu, CLI
 assets/      images produit (non versionnées)
 outputs/     runs générés (non versionnés)
 docs/        pipeline détaillé, protocole de curation
-tests/       43 tests
+tests/       50 tests
 ```
 
 ## Règles de la base de formats
@@ -99,12 +99,12 @@ aux niches où il excelle (liste vide = universel).
 - [x] Rédacteur hors ligne (déterministe, gratuit) et rédacteur Claude (sorties structurées, contrôlé)
 - [x] Détourage automatique local (rembg/u2net), déclenché seulement si nécessaire
 - [x] Zones à plusieurs lignes (infographies), assets étiquetés (avant/après)
-- [x] 43 tests, plusieurs vérifications en conditions réelles à chaque étape
+- [x] 50 tests (43 + 7 issus de la revue ci-dessous), plusieurs vérifications en conditions réelles
+- [x] Passe de revue sur `agent/` (8 constats corrigés : texte illisible sur fond accent, chemins
+  d'assets non confinés à la racine du projet, incohérences produit/scène, etc.)
 
 ## Prochaines étapes (pas commencées, choix assumés)
 
-- **Passe de revue** sur `agent/` avant d'ajouter quoi que ce soit de nouveau (aucune revue outillée
-  dédiée n'a encore été faite sur ce code).
 - **Finition dans Canva** : Canva n'expose pas son détourage/sa génération d'image via son API pour
   développeurs (vérifié directement sur sa documentation), seulement dans son éditeur. L'usage prévu est
   donc une étape manuelle de finition après notre pipeline : pousser une variante dans un gabarit Canva
