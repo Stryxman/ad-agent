@@ -75,6 +75,14 @@ class OfflineWriter:
                       hooks=[t.text for t in brief.testimonials],
                       rationale="Avis clients réels fournis dans le brief.")
             )
+        if any(a.role == "before" for a in brief.assets) and any(a.role == "after" for a in brief.assets):
+            # sans cet angle, un format avant/après reste éligible mais n'a jamais de candidat : il
+            # disparaît silencieusement du plan (voir select_variants) faute d'angle de ce hook_type.
+            angles.append(
+                Angle(id="a_before_after", hook_type=HookType.before_after,
+                      hooks=[f"{brief.product.name} : le résultat en images"],
+                      rationale="Photos avant/après réelles fournies dans le brief.")
+            )
         return angles
 
     def write_copy(self, brief: Brief, hook: str, fmt: AdFormat) -> tuple[dict[str, str | list[str]], list[str]]:

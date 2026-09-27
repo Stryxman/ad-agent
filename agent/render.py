@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import mimetypes
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -54,7 +55,10 @@ def readable_on(color: str, bg: str, min_ratio: float = 3.0) -> str:
     return color if contrast_ratio(color, bg) >= min_ratio else contrast_color(bg)
 
 
+@lru_cache(maxsize=256)
 def _data_uri(path: Path) -> str | None:
+    """Encodée une seule fois par chemin : un run appelle `render_html` une fois par (variante, ratio),
+    mais les 4 images (produit/scène/avant/après) sont les mêmes fichiers à chaque appel."""
     if not path.is_file():
         return None
     mime = mimetypes.guess_type(path.name)[0] or "image/png"

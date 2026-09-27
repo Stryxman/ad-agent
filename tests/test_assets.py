@@ -98,3 +98,30 @@ def test_ensure_isolated_reports_failure_without_crashing(tmp_path, monkeypatch)
 def test_ensure_isolated_missing_file_is_reported(tmp_path):
     report = assets.ensure_isolated(tmp_path / "absent.png")
     assert report.action == "introuvable" and not report.isolated
+
+
+def test_ensure_isolated_reports_failure_for_any_exception_type(tmp_path, monkeypatch):
+    """rembg/onnxruntime peuvent lever autre chose qu'un RuntimeError (image invalide, modèle
+    corrompu...) : ça doit rester un échec proprement rapporté, jamais un crash du run."""
+    path = tmp_path / "photo.png"
+    img = Image.new("RGB", (200, 200))
+    px = img.load()
+    for x in range(200):
+        for y in range(200):
+            px[x, y] = ((x * 7) % 256, (y * 13) % 256, ((x + y) * 5) % 256)
+    _save(img, path)
+
+    def fail(_path):
+        raise ValueError("modèle onnx corrompu")
+
+    monkeypatch.setattr(assets, "_remove_background", fail)
+    report = assets.ensure_isolated(path, cache_dir=tmp_path / "cache")
+    assert report.action == "echec" and "modèle onnx corrompu" in report.note
+
+
+def test_ensure_isolated_reports_failure_for_unreadable_image(tmp_path):
+    """Un fichier corrompu/illisible par PIL ne doit pas faire planter tout le run."""
+    path = tmp_path / "corrompu.png"
+    path.write_bytes(b"ceci n'est pas une image")
+    report = assets.ensure_isolated(path, cache_dir=tmp_path / "cache")
+    assert report.action == "echec" and not report.isolated

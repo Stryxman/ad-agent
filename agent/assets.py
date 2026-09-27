@@ -85,10 +85,15 @@ def ensure_isolated(path: Path, cache_dir: Path = CACHE_DIR) -> AssetAnalysis:
         return AssetAnalysis(path=str(path), isolated=False, action="introuvable",
                              used_path=str(path), note="fichier absent")
 
-    with Image.open(path) as img:
-        if looks_isolated(img):
-            return AssetAnalysis(path=str(path), isolated=True, action="aucune",
-                                 used_path=str(path), note="fond déjà uniforme ou transparent")
+    try:
+        with Image.open(path) as img:
+            if looks_isolated(img):
+                return AssetAnalysis(path=str(path), isolated=True, action="aucune",
+                                     used_path=str(path), note="fond déjà uniforme ou transparent")
+    except Exception as e:
+        # image corrompue/illisible par PIL : signalé comme un échec de détourage, pas un crash du run
+        return AssetAnalysis(path=str(path), isolated=False, action="echec",
+                             used_path=str(path), note=f"image illisible ({type(e).__name__}: {e})")
 
     digest = hashlib.sha1(path.read_bytes()).hexdigest()[:16]
     cached = cache_dir / f"{digest}.png"
@@ -96,7 +101,9 @@ def ensure_isolated(path: Path, cache_dir: Path = CACHE_DIR) -> AssetAnalysis:
         cache_dir.mkdir(parents=True, exist_ok=True)
         try:
             cached.write_bytes(_remove_background(path))
-        except RuntimeError as e:
+        except Exception as e:
+            # rembg/onnxruntime peuvent lever autre chose qu'un RuntimeError (image invalide, modèle
+            # corrompu…) : on veut toujours un échec proprement rapporté, jamais un run qui plante.
             return AssetAnalysis(path=str(path), isolated=False, action="echec",
                                  used_path=str(path), note=str(e))
     return AssetAnalysis(path=str(path), isolated=False, action="detoure",

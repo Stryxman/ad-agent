@@ -265,10 +265,10 @@ class ClaudeWriter:
                 if zone.list_min and len(valid) < zone.list_min:
                     warnings.append(
                         f"zone « {zone.id} » : seulement {len(valid)} ligne(s) valide(s) sur "
-                        f"{zone.list_min} minimum, zone laissée vide"
+                        f"{zone.list_min} minimum"
                     )
-                else:
-                    zones[zone.id] = valid
+                zones[zone.id] = valid  # les lignes valides sont gardées même sous le minimum : mieux
+                                        # qu'une zone totalement vide (le warning signale le manque)
                 continue
             text = re.sub(r"\s+", " ", item.text).strip()
             if not text:

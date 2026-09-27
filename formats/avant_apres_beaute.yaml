@@ -37,10 +37,9 @@ zones:
     role: subhead
     max_chars: 80
     position: bas, petit (ex. « Résultats variables selon les personnes »)
-  - id: product
-    role: image
-    required: false
-    position: bas ou milieu de frise
+  # Pas de zone "product" ici : le gabarit actuel n'est qu'une paire avant/après (2 vignettes), pas la
+  # frise à 3 vignettes + packshot décrite dans layout_notes/source.notes ci-dessous — ce gabarit reste
+  # `status: draft`, la frise est une piste non construite, pas une zone qu'on peut déclarer puis ignorer.
   - id: cta
     role: cta
     max_chars: 20

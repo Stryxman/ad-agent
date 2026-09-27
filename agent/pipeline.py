@@ -16,7 +16,7 @@ from agent.assets import ensure_isolated
 from agent.loader import ROOT, load_all_formats, load_brief
 from agent.render import available_templates, render_html, screenshot_all
 from agent.schemas import (
-    AdFormat, Angle, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
+    AdFormat, Angle, AssetAnalysis, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
 )
 from agent.writers import OfflineWriter, Writer, WriterError, fit_text, normalize
 
@@ -30,6 +30,27 @@ def _dump(path: Path, data: BaseModel | dict | list) -> None:
     if isinstance(data, BaseModel):
         data = data.model_dump(mode="json")
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _safe_path(rel: str) -> Path | None:
+    """Résout un chemin d'asset fourni par le brief (donnée utilisateur, pas du code de confiance),
+    confiné à la racine du projet. Renvoie None si le chemin (absolu ou via `..`) sort de cette racine,
+    plutôt que de laisser un chemin arbitraire être lu et embarqué dans le HTML/manifest généré."""
+    root = ROOT.resolve()
+    resolved = (ROOT / rel).resolve()
+    if resolved != root and root not in resolved.parents:
+        return None
+    return resolved
+
+
+def _first_safe_file(assets: list, role: str) -> Path | None:
+    for a in assets:
+        if a.role != role:
+            continue
+        p = _safe_path(a.path)
+        if p and p.is_file():
+            return p
+    return None
 
 
 def _has_field(brief: Brief, dotted: str) -> bool:
@@ -80,9 +101,19 @@ def select_variants(brief: Brief, angles: list[Angle], formats: list[AdFormat]) 
     # candidats = angle × format × accroche : un concept par candidat, rendu dans tous ses ratios communs
     candidates: list[tuple[Angle, AdFormat, str]] = []
     for fmt in usable:
-        for angle in angles:
-            if angle.hook_type in fmt.hook_types:
-                candidates.extend((angle, fmt, hook) for hook in angle.hooks)
+        fmt_candidates = [
+            (angle, fmt, hook) for angle in angles if angle.hook_type in fmt.hook_types for hook in angle.hooks
+        ]
+        if not fmt_candidates:
+            # éligible sur le papier (ratio/objectif/niche/champs requis), mais aucun angle proposé ne
+            # correspond à ses hook_types : sans ceci, le format disparaît silencieusement (ni variante,
+            # ni raison d'exclusion), par ex. un format `comparison` alors qu'aucun rédacteur n'en propose.
+            skipped.append(SkippedFormat(
+                format_id=fmt.id,
+                reason=f"aucun angle proposé ne correspond aux hooks du format ({[h.value for h in fmt.hook_types]})",
+            ))
+            continue
+        candidates.extend(fmt_candidates)
 
     # sélection gloutonne : on pénalise la répétition d'un même format ou d'un même angle
     chosen: list[Variant] = []
@@ -188,16 +219,23 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     # les photos étiquetées avant/après ne sont jamais détourées : ce sont de vraies photos de personnes,
     # utilisées telles quelles, jamais un produit isolé sur fond uni
     generic_assets = [a for a in brief.assets if a.role not in ("before", "after")]
-    asset_reports = [ensure_isolated(ROOT / a.path) for a in generic_assets]
+    generic_paths = [_safe_path(a.path) for a in generic_assets]
+    asset_reports = [
+        ensure_isolated(p) if p is not None
+        else AssetAnalysis(path=a.path, isolated=False, action="introuvable", used_path=a.path,
+                            note="chemin hors de la racine du projet, refusé")
+        for a, p in zip(generic_assets, generic_paths)
+    ]
     _dump(run_dir / "assets.report.json", [a.model_dump(mode="json") for a in asset_reports])
-    product_image = next(
-        (Path(a.used_path) for a in asset_reports if a.action not in ("echec", "introuvable")), None
-    )
-    # la photo d'origine (avant détourage), pour les gabarits qui veulent une scène plein cadre plutôt
-    # qu'un produit isolé sur fond uni
-    scene_image = next((ROOT / a.path for a in generic_assets if (ROOT / a.path).is_file()), None)
-    before_image = next((ROOT / a.path for a in brief.assets if a.role == "before" and (ROOT / a.path).is_file()), None)
-    after_image = next((ROOT / a.path for a in brief.assets if a.role == "after" and (ROOT / a.path).is_file()), None)
+    # product_image (produit détouré) et scene_image (photo d'origine) viennent du même asset choisi,
+    # pour ne jamais composer deux photos différentes dans un même run
+    _usable = [
+        (p, r) for p, r in zip(generic_paths, asset_reports) if p is not None and r.action not in ("echec", "introuvable")
+    ]
+    product_image = Path(_usable[0][1].used_path) if _usable else None
+    scene_image = _usable[0][0] if _usable else None
+    before_image = _first_safe_file(brief.assets, "before")
+    after_image = _first_safe_file(brief.assets, "after")
 
     # 3. angles
     try:

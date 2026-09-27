@@ -119,13 +119,15 @@ def test_list_zone_is_split_validated_and_capped():
     assert any("chiffre" in w for w in warnings)
 
 
-def test_list_zone_below_minimum_is_left_empty():
+def test_list_zone_below_minimum_keeps_valid_lines_and_warns():
     fmt = FORMATS["infographie_probleme"]
     client = FakeClient(copy=CopyDraft(zones=[ZoneDraft(
         zone_id="lines", text="Une seule ligne valide ici",
     )]))
     zones, warnings = ClaudeWriter(client=client).write_copy(BRIEF, "Un vrai plaisir", fmt)
-    assert "lines" not in zones
+    # sous le minimum, la ligne valide est gardée (mieux qu'une zone totalement vide) ; le warning
+    # signale le manque pour que ça reste visible dans review.md.
+    assert zones["lines"] == ["Une seule ligne valide ici"]
     assert any("minimum" in w for w in warnings)
 
 

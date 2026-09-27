@@ -3,9 +3,9 @@ import json
 from markupsafe import escape
 
 from agent.loader import BRIEFS_DIR, load_all_formats, load_brief
-from agent.pipeline import eligibility, run, select_variants
-from agent.render import available_templates, contrast_ratio, readable_on
-from agent.schemas import Niche
+from agent.pipeline import _safe_path, eligibility, run, select_variants
+from agent.render import available_templates, contrast_color, contrast_ratio, readable_on, render_html
+from agent.schemas import AdFormat, Niche, Variant, Zone
 from agent.writers import OfflineWriter, fit_text
 
 EXAMPLE = BRIEFS_DIR / "example_soin_peau.yaml"
@@ -126,6 +126,95 @@ def test_readable_accent_falls_back_when_contrast_is_low():
     assert readable_on("#C9A27E", "#F4E9DD") == "#111111"          # or clair sur beige : illisible
     assert readable_on("#1B4D3E", "#F4E9DD") == "#1B4D3E"          # vert foncé : lisible
     assert contrast_ratio("#000000", "#FFFFFF") > 20
+
+
+def test_before_after_angle_is_produced_by_offline_writer_when_photos_are_tagged():
+    from agent.schemas import AssetRef, HookType
+
+    brief = load_brief(EXAMPLE).model_copy(update={"assets": [
+        AssetRef(path="assets/products/serum_packshot.png", role="before"),
+        AssetRef(path="assets/products/serum_packshot.png", role="after"),
+    ]})
+    angles = OfflineWriter().propose_angles(brief)
+    assert any(a.hook_type == HookType.before_after for a in angles)  # sinon le format correspondant
+    # reste éligible mais n'a jamais de candidat (voir test_eligible_format_with_no_matching_angle...)
+
+
+def test_eligible_format_with_no_matching_angle_is_reported_as_skipped(monkeypatch):
+    import agent.pipeline as pipeline_mod
+
+    brief = load_brief(EXAMPLE)
+    fmt = AdFormat(
+        id="x_comparatif_test", name="Comparatif (test)", description="format de test",
+        ratios=list(brief.ratios), objectives=[brief.objective], hook_types=["comparison"],
+        zones=[Zone(id="headline", role="headline")],
+    )
+    # aucun rédacteur (hors ligne ou Claude) ne propose d'angle "comparison" aujourd'hui : sans le
+    # garde-fou de select_variants, ce format éligible disparaîtrait sans laisser de trace.
+    monkeypatch.setattr(pipeline_mod, "available_templates", lambda: {fmt.id})
+    angles = OfflineWriter().propose_angles(brief)
+    plan = select_variants(brief, angles, [fmt])
+    skipped = {s.format_id: s.reason for s in plan.skipped}
+    assert fmt.id in skipped and "comparison" in skipped[fmt.id]
+    assert all(v.format_id != fmt.id for v in plan.variants)
+
+
+def test_product_and_scene_image_come_from_the_same_asset(monkeypatch, tmp_path):
+    """Avant le correctif, product_image sautait les assets en échec pendant que scene_image restait
+    sur le premier fichier existant : deux photos différentes du même produit dans un même run."""
+    import base64
+
+    import agent.pipeline as pipeline_mod
+    from agent.schemas import AssetAnalysis, AssetRef
+
+    asset_a = tmp_path / "a.png"
+    asset_b = tmp_path / "b.png"
+    asset_a.write_bytes(b"CONTENU_A_ECHOUE")
+    asset_b.write_bytes(b"CONTENU_B_ORIGINAL")
+    cache = tmp_path / "b_detoure.png"
+
+    def fake_ensure_isolated(path, cache_dir=None):
+        if path.name == "a.png":
+            return AssetAnalysis(path=str(path), isolated=False, action="echec",
+                                 used_path=str(path), note="echec test")
+        cache.write_bytes(b"CONTENU_B_DETOURE")
+        return AssetAnalysis(path=str(path), isolated=False, action="detoure", used_path=str(cache), note="ok")
+
+    brief = load_brief(EXAMPLE).model_copy(update={"assets": [AssetRef(path="a.png"), AssetRef(path="b.png")]})
+    monkeypatch.setattr(pipeline_mod, "ensure_isolated", fake_ensure_isolated)
+    monkeypatch.setattr(pipeline_mod, "ROOT", tmp_path)
+    monkeypatch.setattr(pipeline_mod, "load_brief", lambda _p: brief)
+
+    run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path / "out", render_png=False)
+    html = "\n".join(p.read_text(encoding="utf-8") for p in (run_dir / "renders").glob("*.html"))
+
+    assert base64.b64encode(b"CONTENU_A_ECHOUE").decode() not in html  # jamais utilisé, isolement en échec
+    assert base64.b64encode(b"CONTENU_B_ORIGINAL").decode() in html    # scene_img : la photo d'origine
+    assert base64.b64encode(b"CONTENU_B_DETOURE").decode() in html    # product_img : le produit détouré
+    # les deux viennent du même asset (b.png) : jamais a.png pour l'un et b.png pour l'autre
+
+
+def test_asset_path_escaping_project_root_is_refused():
+    assert _safe_path("../../../../etc/hostname") is None
+    assert _safe_path("/etc/hostname") is None
+    assert _safe_path("assets/products/serum_packshot.png") is not None  # chemin normal, inchangé
+
+
+def test_scene_placeholder_text_is_readable_against_accent_not_background(tmp_path):
+    # Régression : titre_produit_en_situation utilisait `accent_text` (contraste vs. le fond de page)
+    # pour du texte posé sur un bloc `accent`, ce qui pouvait rendre le texte invisible.
+    tech_brief = load_brief(BRIEFS_DIR / "example_ecouteurs_tech.yaml")
+    fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
+    accent, bg = tech_brief.da.palette[2], tech_brief.da.palette[0]
+    assert contrast_ratio(accent, bg) >= 3.0  # condition qui déclenchait le bug (accent déjà lisible sur bg)
+
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["4:5"], hook="x", score=1.0, rationale="r")
+    html_path = render_html(variant, fmt, {"headline": "Titre"}, tech_brief, "4:5", tmp_path,
+                            product_image=None, scene_image=None)
+    html = html_path.read_text(encoding="utf-8")
+    on_accent = contrast_color(accent)
+    assert f"background: var(--accent); color: {on_accent};" in html
+    assert contrast_ratio(on_accent, accent) >= 3.0
 
 
 def test_run_produces_all_artifacts_and_respects_zone_limits(tmp_path):
