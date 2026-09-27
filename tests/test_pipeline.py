@@ -335,3 +335,33 @@ def test_white_title_over_a_photo_gets_a_dark_top_veil(tmp_path):
                        scene_image=photo).read_text(encoding="utf-8")
     assert 'class="scrim-top"' in html
     assert "linear-gradient(to bottom, rgba(0,0,0," in html
+
+
+def _render_titre(tmp_path, ratio, scene_image=None, product_image=None):
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=[ratio], hook="x", score=1.0, rationale="r")
+    look = make_look(fmt.fond, *palette_of(brief))
+    html = render_html(variant, fmt, {"headline": "Titre", "offer_line": "-20 %"}, brief, ratio, tmp_path,
+                       scene_image=scene_image, product_image=product_image, look=look).read_text(encoding="utf-8")
+    return html, look
+
+
+def test_product_inset_stays_in_the_safe_area_flow(tmp_path):
+    # la miniature produit est un élément clé : dans le flux du bas de contenu (au-dessus de l'offre, donc
+    # hors bande basse), jamais positionnée depuis le bord du canevas
+    from PIL import Image
+
+    photo, produit = tmp_path / "scene.png", tmp_path / "produit.png"
+    Image.new("RGB", (120, 200), (235, 235, 230)).save(photo)
+    Image.new("RGBA", (40, 80), (200, 100, 50, 255)).save(produit)
+    html, _ = _render_titre(tmp_path, "9:16", scene_image=photo, product_image=produit)
+    bottom = html.index('<div class="bottom">')
+    assert bottom < html.index('class="product-inset"') < html.index('class="offer"')
+
+
+def test_title_without_photo_uses_the_readable_colour_of_the_accent_surface(tmp_path):
+    html, look = _render_titre(tmp_path, "4:5")
+    assert look.on_accent_surface == "#111111"
+    assert f"--txt: {look.on_accent_surface};" in html
+    assert 'class="scrim"' not in html          # les voiles ne servent qu'à assombrir une photo

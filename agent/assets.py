@@ -80,6 +80,10 @@ def _remove_background(path: Path) -> bytes:
 
 
 TRIM_MARGIN = 0.03  # marge transparente gardée autour du produit recadré (fraction de son plus grand côté)
+# rembg laisse un halo d'alpha infime (1 à 3) loin du produit : mesuré sur une vraie photo, la zone du produit
+# est stable dès ce seuil (à 10 px près jusqu'à 128), alors qu'un seuil nul garde ~40 % de vide autour.
+ALPHA_NOISE = 8
+CROP_VERSION = 2  # à incrémenter à chaque changement du recadrage : les caches précédents sont ignorés
 
 
 def _trim(data: bytes) -> bytes:
@@ -88,7 +92,7 @@ def _trim(data: bytes) -> bytes:
     try:
         with Image.open(io.BytesIO(data)) as img:
             img = img.convert("RGBA")
-            box = img.getchannel("A").getbbox()
+            box = img.getchannel("A").point(lambda v: 255 if v > ALPHA_NOISE else 0).getbbox()
             if not box:
                 return data
             m = max(1, round(TRIM_MARGIN * max(box[2] - box[0], box[3] - box[1])))
@@ -120,7 +124,7 @@ def ensure_isolated(path: Path, cache_dir: Path = CACHE_DIR) -> AssetAnalysis:
                              used_path=str(path), note=f"image illisible ({type(e).__name__}: {e})")
 
     digest = hashlib.sha1(path.read_bytes()).hexdigest()[:16]
-    cached = cache_dir / f"{digest}-recadre.png"  # suffixe : les anciens caches non recadrés sont ignorés
+    cached = cache_dir / f"{digest}-recadre-v{CROP_VERSION}.png"  # nouvelle méthode = nouveau fichier
     if not cached.is_file():
         cache_dir.mkdir(parents=True, exist_ok=True)
         try:

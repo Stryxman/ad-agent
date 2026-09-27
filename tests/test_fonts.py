@@ -70,3 +70,10 @@ def test_family_prefix_must_end_at_a_separator(tmp_path):
     (tmp_path / "InterTight-Regular.ttf").write_bytes(b"x")
     assert find_local("Inter", tmp_path) is None
     assert resolve(["Inter"], tmp_path).sources == {"Inter": "google"}
+
+
+def test_font_files_named_with_underscores_are_recognised(tmp_path):
+    (tmp_path / "Playfair_Display-Regular.ttf").write_bytes(b"x")
+    (tmp_path / "Inter_18pt-Regular.ttf").write_bytes(b"y")   # tailles optiques de Google (static/)
+    assert find_local("Playfair Display", tmp_path).name == "Playfair_Display-Regular.ttf"
+    assert find_local("Inter", tmp_path).name == "Inter_18pt-Regular.ttf"

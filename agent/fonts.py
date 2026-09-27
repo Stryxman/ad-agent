@@ -40,8 +40,18 @@ def _key(s: str) -> str:
 
 
 def _tokens(p: Path) -> list[str]:
-    """« PlayfairDisplay-Bold » -> ["playfairdisplay", "bold"] ; « Inter_18pt-Regular » -> ["inter", "18pt", "regular"]."""
-    return re.split(r"[-_]", p.stem.lower())
+    """Famille puis styles, séparés par le premier tiret (convention Google Fonts) :
+    « Playfair_Display-Bold » -> ["playfair_display", "bold"] ; « Inter-Italic-VariableFont_opsz,wght » ->
+    ["inter", "italic", "variablefont", "opsz,wght"]."""
+    family, _, styles = p.stem.lower().partition("-")
+    return [family, *re.split(r"[-_]", styles)] if styles else [family]
+
+
+def _same_family(file_family: str, key: str) -> bool:
+    """« playfair_display » = « Playfair Display » ; « inter_18pt » (taille optique) = « Inter » ;
+    « intertight » != « Inter »."""
+    k = _key(file_family)
+    return k == key or re.fullmatch(rf"{re.escape(key)}\d+pt", k) is not None
 
 
 def local_faces(family: str, fonts_dir: Path = FONTS_DIR) -> list[tuple[Path, str]]:
@@ -52,7 +62,7 @@ def local_faces(family: str, fonts_dir: Path = FONTS_DIR) -> list[tuple[Path, st
     if not fonts_dir.is_dir():
         return []
     key = _key(family)
-    files = sorted(p for p in fonts_dir.iterdir() if p.suffix.lower() in MIME and _key(_tokens(p)[0]) == key)
+    files = sorted(p for p in fonts_dir.iterdir() if p.suffix.lower() in MIME and _same_family(_tokens(p)[0], key))
     upright = [p for p in files if "italic" not in p.stem.lower()]
     variable = [p for p in upright if "variable" in p.stem.lower()]
     if variable:
