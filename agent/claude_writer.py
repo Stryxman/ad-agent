@@ -17,8 +17,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-from agent.schemas import AdFormat, Angle, Brief, HookType
-from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError, normalize
+from agent.schemas import AdFormat, Angle, Brief, HookType, PublicationCopy
+from agent.checks import brief_facts, check_text, normalize  # réexportés (tests)
+from agent.checks import allowed_numbers, numbers as _numbers
+from agent.publication import (
+    HEADLINE_MAX, MAX_ITEMS, PRIMARY_MAX, PRIMARY_MIN, filter_texts, is_testimonial, offline_publication,
+    testimonial_text,
+)
+from agent.writers import NON_TEXT_ROLES, OfflineWriter, WriterError
 
 DEFAULT_MODEL = "claude-opus-5"
 
@@ -62,43 +68,9 @@ class CopyDraft(BaseModel):
     zones: list[ZoneDraft]
 
 
-# ---------------------------------------------------------------------- utilitaires
-
-
-def _numbers(text: str) -> set[str]:
-    return {n.replace(",", ".") for n in re.findall(r"\d+(?:[.,]\d+)?", text)}
-
-
-def brief_facts(brief: Brief) -> dict[str, Any]:
-    """Ce que le modèle a le droit de savoir : pas de chemins de fichiers ni de couleurs."""
-    return {
-        "campagne": brief.name, "marque": brief.brand, "niche": brief.niche.value,
-        "objectif": brief.objective.value, "langue": brief.language,
-        "produit": {
-            "nom": brief.product.name, "description": brief.product.description,
-            "benefices": brief.product.benefits, "prix": brief.product.price,
-            "ancien_prix": brief.product.compare_at_price,
-        },
-        "audience": brief.audience, "offre": brief.offer,
-        "ton": brief.da.tone, "a_faire": brief.da.dos, "a_eviter": brief.da.donts,
-        "hook_impose": brief.hook_idea, "promesses_interdites": brief.forbidden_claims,
-    }
-
-
-def check_text(text: str, max_chars: int | None, brief: Brief, allowed_numbers: set[str]) -> str | None:
-    """Renvoie le motif de rejet d'un texte produit par le modèle, ou None s'il est acceptable."""
-    if not text.strip():
-        return "texte vide"
-    if max_chars is not None and len(text) > max_chars:
-        return f"trop long ({len(text)} > {max_chars} caractères)"
-    norm = normalize(text)
-    for claim in brief.forbidden_claims:
-        if normalize(claim) in norm:
-            return f"contient la promesse interdite « {claim} »"
-    invented = _numbers(text) - allowed_numbers
-    if invented:
-        return f"chiffre absent du brief : {sorted(invented)}"
-    return None
+class PublicationDraft(BaseModel):
+    primary_texts: list[str]
+    headlines: list[str]
 
 
 # --------------------------------------------------------------------- le rédacteur
@@ -279,3 +251,38 @@ class ClaudeWriter:
             else:
                 zones[zone.id] = text
         return zones, warnings
+
+    # -- textes de publication ----------------------------------------------------------
+
+    def write_publication(self, brief: Brief, hook: str) -> tuple[PublicationCopy, list[str]]:
+        base, base_warnings = offline_publication(brief, hook)  # repli déterministe
+        if is_testimonial(brief, hook):
+            return base, base_warnings  # un avis réel n'est jamais envoyé au modèle pour réécriture
+        facts = brief_facts(brief)                              # sans les avis : ils restent au code
+        prompt = (
+            f"Brief (JSON) :\n{json.dumps(facts, ensure_ascii=False, indent=2)}\n\n"
+            f"Accroche de cette variante : « {hook} »\n\n"
+            "Écris les textes de publication Meta qui accompagnent le visuel, dans la langue du brief :\n"
+            f"- {MAX_ITEMS} textes principaux de {PRIMARY_MIN} à {PRIMARY_MAX} caractères, chacun sous un angle "
+            "différent, qui portent l'accroche ;\n"
+            f"- {MAX_ITEMS} titres de {HEADLINE_MAX} caractères maximum.\n"
+            "N'utilise que les faits du brief : aucun avis client, aucun chiffre absent du brief."
+        )
+        draft: PublicationDraft = self._ask(prompt, PublicationDraft)
+        allowed = allowed_numbers(brief) | _numbers(hook)
+        heads, warnings = filter_texts(draft.headlines, HEADLINE_MAX, brief, allowed, "titre")
+        prims, w = filter_texts(draft.primary_texts, PRIMARY_MAX, brief, allowed, "texte principal",
+                                min_len=PRIMARY_MIN)
+        warnings += w
+        testimonial = testimonial_text(brief, hook)
+        if testimonial:
+            prims = [p for p in prims if p != testimonial][:MAX_ITEMS - 1] + [testimonial]
+        if not heads:
+            heads = base.headlines
+            warnings.append("aucun titre du modèle retenu : titres hors ligne")
+        if not [p for p in prims if p != testimonial]:
+            prims = base.primary_texts
+            warnings.append("aucun texte principal du modèle retenu : textes hors ligne")
+        if heads is base.headlines or prims is base.primary_texts:
+            warnings += base_warnings
+        return PublicationCopy(primary_texts=prims, headlines=heads), warnings

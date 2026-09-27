@@ -33,6 +33,7 @@ asset_needs:
   lifestyle: false
   person: false
   generated_scene_ok: false
+fond: mesh   # format centré produit
 
 layout_notes: >
   Couleur de fond saturée issue de la DA (orange, vert profond). Titre en blanc ou couleur claire, très

@@ -37,6 +37,7 @@ asset_needs:
   lifestyle: false
   person: false
   generated_scene_ok: true
+fond: mesh   # format centré produit
 
 layout_notes: >
   Accroche courte (3 à 7 mots) comme « Pack Lighter, Be Present » ou « Detects Local Voltage in

@@ -1,8 +1,7 @@
 {% extends "_base.html" %}
 {% block style %}
 <style>
-  .canvas { background: var(--bg); color: {{ on_bg }}; padding: calc(var(--u) * 6) calc(var(--u) * 6) calc(var(--u) * 4);
-            justify-content: flex-start; gap: calc(var(--u) * 3); }
+  .canvas { background: {{ bg_surface_css }}; color: {{ on_bg }};            justify-content: flex-start; gap: calc(var(--u) * 3); }
   .band { text-align: left; width: 100%; }
   .pname { font-size: calc(var(--u) * 4.4); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
   .price { font-size: calc(var(--u) * 3.2); opacity: .7; margin-top: calc(var(--u) * .6); }

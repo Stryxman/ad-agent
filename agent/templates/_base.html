@@ -3,12 +3,15 @@
 <head>
 <meta charset="utf-8">
 <title>{{ brand }} — {{ fmt_id }} {{ ratio }}</title>
+{{ font_head }}
 <style>
-  :root { --u: {{ u }}px; --bg: {{ bg }}; --fg: {{ fg }}; --accent: {{ accent }}; }
+  :root { --u: {{ u }}px; --bg: {{ bg }}; --fg: {{ fg }}; --accent: {{ accent }};
+          --safe-top: {{ safe[0] }}px; --safe-right: {{ safe[1] }}px; --safe-bottom: {{ safe[2] }}px; --safe-left: {{ safe[3] }}px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: {{ w }}px; height: {{ h }}px; overflow: hidden; }
   body { font-family: "{{ font_body }}", Helvetica, Arial, sans-serif; }
-  .canvas { width: {{ w }}px; height: {{ h }}px; padding: calc(var(--u) * 7); display: flex; flex-direction: column;
+  .canvas { width: {{ w }}px; height: {{ h }}px; padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+            display: flex; flex-direction: column;
             align-items: center; text-align: center; overflow: hidden; }
   .display { font-family: "{{ font_display }}", Georgia, serif; }
   .brand { font-family: "{{ font_display }}", Georgia, serif; font-size: calc(var(--u) * 4.2); letter-spacing: .18em;
@@ -20,6 +23,8 @@
         font-size: calc(var(--u) * 3.2); }
   .cta { display: inline-block; padding: calc(var(--u) * 2) calc(var(--u) * 5); border-radius: 999px;
          font-size: calc(var(--u) * 3.4); font-weight: 600; }
+  .safe-ov { position: fixed; inset: 0; pointer-events: none; z-index: 99; }
+  .safe-ov i { position: absolute; background: rgba(255, 0, 0, .28); }
 </style>
 {% block style %}{% endblock %}
 </head>
@@ -31,5 +36,13 @@
   </div>
 {% endmacro %}
 {% block body %}{% endblock %}
+{% if safe_overlay %}
+<div class="safe-ov" aria-hidden="true">
+  <i style="top:0;left:0;right:0;height:var(--safe-top)"></i>
+  <i style="bottom:0;left:0;right:0;height:var(--safe-bottom)"></i>
+  <i style="top:0;bottom:0;left:0;width:var(--safe-left)"></i>
+  <i style="top:0;bottom:0;right:0;width:var(--safe-right)"></i>
+</div>
+{% endif %}
 </body>
 </html>

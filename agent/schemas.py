@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 RATIOS = {"1:1", "4:5", "9:16", "16:9"}
+_HEX = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 
 
 class Objective(str, Enum):
@@ -62,6 +65,17 @@ class DA(BaseModel):
     tone: str
     dos: list[str] = Field(default_factory=list)
     donts: list[str] = Field(default_factory=list)
+    fond: Literal["auto", "lineaire", "mesh", "uni"] = Field(
+        default="auto", description="Traitement de fond ; auto = celui de chaque format"
+    )
+
+    @field_validator("palette")
+    @classmethod
+    def _check_hex(cls, values: list[str]) -> list[str]:
+        bad = [v for v in values if not _HEX.match(v)]
+        if bad:
+            raise ValueError(f"couleur non hexadécimale dans la palette : {bad} (attendu : #RRGGBB ou #RGB)")
+        return values
 
 
 class AssetRef(BaseModel):
@@ -154,6 +168,9 @@ class AdFormat(BaseModel):
     )
     zones: list[Zone] = Field(min_length=1)
     asset_needs: AssetNeeds = Field(default_factory=AssetNeeds)
+    fond: Literal["lineaire", "mesh", "uni"] = Field(
+        default="lineaire", description="Traitement de fond par défaut de ce format"
+    )
     layout_notes: str = Field(default="", description="Structure visuelle en langage naturel")
     when_to_use: str = ""
     when_to_avoid: str = ""
@@ -215,7 +232,15 @@ class VariantPlan(BaseModel):
     skipped: list[SkippedFormat] = Field(default_factory=list)
 
 
+class PublicationCopy(BaseModel):
+    """Textes saisis dans Ads Manager à côté du visuel (hors de l'image)."""
+
+    primary_texts: list[str] = Field(default_factory=list)
+    headlines: list[str] = Field(default_factory=list)
+
+
 class VariantCopy(BaseModel):
     variant_id: str
     zones: dict[str, str | list[str]]  # str pour une zone normale, list[str] pour une zone role="list"
+    publication: PublicationCopy = Field(default_factory=PublicationCopy)
     warnings: list[str] = Field(default_factory=list)

@@ -10,6 +10,9 @@ outputs/*
 assets/products/*
 !assets/products/.gitkeep
 assets/.cache/
+# Polices de marque (souvent sous licence) : jamais versionnées
+assets/fonts/*
+!assets/fonts/.gitkeep
 
 # Ne jamais versionner les visuels de concurrents (droits d'auteur)
 formats/references/

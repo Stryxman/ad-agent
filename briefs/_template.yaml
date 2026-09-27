@@ -22,6 +22,7 @@ da:                          # direction artistique
   tone: "ex. chaleureux, premium, direct"
   dos: []
   donts: []
+  fond: auto               # auto | lineaire | mesh | uni (auto = celui de chaque format)
 
 hook_idea: null              # angle imposé ; sinon l'agent propose
 

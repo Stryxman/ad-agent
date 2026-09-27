@@ -14,7 +14,9 @@ from pydantic import BaseModel
 
 from agent.assets import ensure_isolated
 from agent.loader import ROOT, load_all_formats, load_brief
-from agent.render import available_templates, render_html, screenshot_all
+from agent.backgrounds import make_look, resolve_kind
+from agent.fonts import resolve as resolve_fonts
+from agent.render import available_templates, palette_of, render_html, screenshot_all
 from agent.schemas import (
     AdFormat, Angle, AssetAnalysis, Brief, SkippedFormat, Variant, VariantCopy, VariantPlan,
 )
@@ -169,7 +171,9 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
                 warnings.append(f"zone « {z.id} » tronquée à {z.max_chars} caractères")
             if z.required and z.role not in ("image", "logo") and not zones.get(z.id):
                 warnings.append(f"zone obligatoire « {z.id} » sans contenu")
-        result.append(VariantCopy(variant_id=v.id, zones=zones, warnings=warnings))
+        publication, pub_warnings = writer.write_publication(brief, v.hook)
+        result.append(VariantCopy(variant_id=v.id, zones=zones, publication=publication,
+                                  warnings=warnings + pub_warnings))
     return result
 
 
@@ -177,10 +181,12 @@ def write_all_copy(brief: Brief, plan: VariantPlan, formats: dict[str, AdFormat]
 
 
 def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[VariantCopy],
-                 formats: dict[str, AdFormat], rendered: dict[str, dict[str, dict[str, str]]]) -> None:
+                 formats: dict[str, AdFormat], rendered: dict[str, dict[str, dict[str, str]]],
+                 notes: list[str] = ()) -> None:
     lines = [f"# Revue du run — {brief.name}", "",
              f"Niche : {brief.niche.value} · Objectif : {brief.objective.value} · "
              f"{len(plan.variants)} variante(s)", ""]
+    lines += [f"> {n}" for n in notes] + ([""] if notes else [])
     by_id = {c.variant_id: c for c in copies}
     for v in plan.variants:
         fmt = formats[v.format_id]
@@ -192,6 +198,11 @@ def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[Varia
         for zid, text in by_id[v.id].zones.items():
             shown = " ; ".join(text) if isinstance(text, list) else text
             lines.append(f"- {zid} : {shown}")
+        pub = by_id[v.id].publication
+        if pub.headlines or pub.primary_texts:
+            lines.append("- Textes de publication :")
+            lines += [f"  - Titre ({len(t)} car.) : {t}" for t in pub.headlines]
+            lines += [f"  - Texte principal ({len(t)} car.) : {t}" for t in pub.primary_texts]
         for w in by_id[v.id].warnings:
             lines.append(f"- ⚠ {w}")
         lines.append("")
@@ -206,7 +217,8 @@ def write_review(path: Path, brief: Brief, plan: VariantPlan, copies: list[Varia
 
 
 def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS_DIR,
-        render_png: bool = True, browser: str = "chromium") -> Path:
+        render_png: bool = True, browser: str = "chromium", fond: str | None = None,
+        safe_overlay: bool = False) -> Path:
     writer = writer or OfflineWriter()
     run_dir = out_root / f"run_{datetime.now():%Y%m%d_%H%M%S}"
     (run_dir / "renders").mkdir(parents=True)
@@ -256,9 +268,19 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
     except WriterError:
         shutil.rmtree(run_dir, ignore_errors=True)
         raise
+
+    # 6. fond de chaque variante : option CLI > DA du brief > défaut du format
+    bg, fg, accent = palette_of(brief)
+    looks = {}
+    for v in plan.variants:
+        looks[v.id] = make_look(resolve_kind(fond, brief.da.fond, formats[v.format_id].fond), bg, fg, accent)
+    for c in copies:
+        c.warnings.extend(looks[c.variant_id].warnings)
     _dump(run_dir / "copy.json", [c.model_dump(mode="json") for c in copies])
 
     # 7. rendu HTML puis PNG, un fichier par ratio
+    notes = ["Rendu de contrôle des zones de sécurité : ne pas publier."] if safe_overlay else []
+    font_plan = resolve_fonts(brief.da.fonts[:2])  # les gabarits n'utilisent que titre + texte
     copy_by_id = {c.variant_id: c for c in copies}
     rendered: dict[str, dict[str, dict[str, str]]] = {}
     jobs: list[tuple[str, str, Path]] = []
@@ -266,23 +288,37 @@ def run(brief_path: Path, writer: Writer | None = None, out_root: Path = OUTPUTS
         rendered[v.id] = {}
         for ratio in v.ratios:
             html_path = render_html(v, formats[v.format_id], copy_by_id[v.id].zones, brief, ratio,
-                                    run_dir / "renders", product_image, scene_image, before_image, after_image)
+                                    run_dir / "renders", product_image, scene_image, before_image, after_image,
+                                    look=looks[v.id], font_head=font_plan.head, safe_overlay=safe_overlay)
             rendered[v.id][ratio] = {"html": str(html_path.relative_to(run_dir))}
             jobs.append((v.id, ratio, html_path))
+    missing_fonts: list[str] | None = None
     if render_png and jobs:
-        for (variant_id, ratio), png in screenshot_all(jobs, browser).items():
+        pngs, missing_fonts = screenshot_all(jobs, browser, fonts=tuple(font_plan.sources))
+        for (variant_id, ratio), png in pngs.items():
             rendered[variant_id][ratio]["png"] = str(png.relative_to(run_dir))
+    notes += font_plan.warnings
+    notes += [f"Police « {f} » : {'fichier local' if s == 'local' else 'Google Fonts'}"
+              for f, s in font_plan.sources.items()]
+    if font_plan.sources and missing_fonts is None:
+        notes.append("Polices non vérifiées (pas de capture PNG).")
+    for f in missing_fonts or []:
+        notes.append(f"⚠ police « {f} » non chargée : rendu en police de secours "
+                     f"(ajoutez le fichier dans assets/fonts/ ou vérifiez le nom sur Google Fonts).")
 
     # 9. manifest + revue
     manifest = {
         "brief": brief.name, "writer": writer.name, "usage": getattr(writer, "usage", None), "created_at": datetime.now().isoformat(timespec="seconds"),
         "variants": [
-            {**v.model_dump(mode="json"), "copy": copy_by_id[v.id].zones,
+            {**v.model_dump(mode="json"), "fond": looks[v.id].kind, "copy": copy_by_id[v.id].zones,
+             "publication": copy_by_id[v.id].publication.model_dump(),
              "warnings": copy_by_id[v.id].warnings, "files": rendered[v.id]}
             for v in plan.variants
         ],
         "skipped_formats": [s.model_dump(mode="json") for s in plan.skipped],
+        "fonts": {"sources": font_plan.sources, "verified": missing_fonts is not None,
+                  "missing": missing_fonts or []},
     }
     _dump(run_dir / "manifest.json", manifest)
-    write_review(run_dir / "review.md", brief, plan, copies, formats, rendered)
+    write_review(run_dir / "review.md", brief, plan, copies, formats, rendered, notes)
     return run_dir

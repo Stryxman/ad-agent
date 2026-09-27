@@ -4,7 +4,8 @@ from markupsafe import escape
 
 from agent.loader import BRIEFS_DIR, load_all_formats, load_brief
 from agent.pipeline import _safe_path, eligibility, run, select_variants
-from agent.render import available_templates, contrast_color, contrast_ratio, readable_on, render_html
+from agent.backgrounds import make_look, worst_contrast
+from agent.render import available_templates, contrast_ratio, palette_of, readable_on, render_html
 from agent.schemas import AdFormat, Niche, Variant, Zone
 from agent.writers import OfflineWriter, fit_text
 
@@ -202,19 +203,59 @@ def test_asset_path_escaping_project_root_is_refused():
 
 def test_scene_placeholder_text_is_readable_against_accent_not_background(tmp_path):
     # Régression : titre_produit_en_situation utilisait `accent_text` (contraste vs. le fond de page)
-    # pour du texte posé sur un bloc `accent`, ce qui pouvait rendre le texte invisible.
+    # pour du texte posé sur un bloc `accent`, ce qui pouvait rendre le texte invisible. Le repère utilise
+    # maintenant la surface accent, dont le texte est vérifié sur chacune de ses couleurs.
     tech_brief = load_brief(BRIEFS_DIR / "example_ecouteurs_tech.yaml")
     fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
-    accent, bg = tech_brief.da.palette[2], tech_brief.da.palette[0]
-    assert contrast_ratio(accent, bg) >= 3.0  # condition qui déclenchait le bug (accent déjà lisible sur bg)
-
+    look = make_look(fmt.fond, *palette_of(tech_brief))
     variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["4:5"], hook="x", score=1.0, rationale="r")
-    html_path = render_html(variant, fmt, {"headline": "Titre"}, tech_brief, "4:5", tmp_path,
-                            product_image=None, scene_image=None)
-    html = html_path.read_text(encoding="utf-8")
-    on_accent = contrast_color(accent)
-    assert f"background: var(--accent); color: {on_accent};" in html
-    assert contrast_ratio(on_accent, accent) >= 3.0
+    html = render_html(variant, fmt, {"headline": "Titre"}, tech_brief, "4:5", tmp_path,
+                       look=look).read_text(encoding="utf-8")
+    assert f"background: {look.accent.css}; color: {look.on_accent_surface};" in html
+    assert worst_contrast(look.on_accent_surface, look.accent) >= 3.0
+
+
+def test_product_formats_default_to_mesh_others_to_lineaire():
+    fonds = {f.id: f.fond for f in load_all_formats()}
+    assert fonds["fond_uni_packshots_prix"] == fonds["spotlight_fonctionnalite"] == "mesh"
+    assert fonds["offre_prix_barre"] == fonds["temoignage_citation"] == "lineaire"
+
+
+def test_run_applies_format_defaults_and_cli_override(tmp_path):
+    run_dir = run(EXAMPLE, out_root=tmp_path / "a", render_png=False)
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    formats = {f.id: f for f in load_all_formats()}
+    for v in manifest["variants"]:
+        assert v["fond"] == formats[v["format_id"]].fond
+    html = "".join(p.read_text(encoding="utf-8") for p in (run_dir / "renders").glob("*.html"))
+    assert "linear-gradient(160deg" in html
+
+    flat_dir = run(EXAMPLE, out_root=tmp_path / "b", render_png=False, fond="uni")
+    flat = json.loads((flat_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert {v["fond"] for v in flat["variants"]} == {"uni"}
+    flat_html = "".join(p.read_text(encoding="utf-8") for p in (flat_dir / "renders").glob("*.html"))
+    assert "radial-gradient(at" not in flat_html and "linear-gradient(160deg" not in flat_html
+
+
+def test_brief_fond_applies_when_cli_is_auto(monkeypatch, tmp_path):
+    import agent.pipeline as pipeline_mod
+
+    brief = load_brief(EXAMPLE)
+    brief = brief.model_copy(update={"da": brief.da.model_copy(update={"fond": "mesh"})})
+    monkeypatch.setattr(pipeline_mod, "load_brief", lambda _p: brief)
+    run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path, render_png=False, fond="auto")
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert {v["fond"] for v in manifest["variants"]} == {"mesh"}
+
+
+def test_single_colour_palette_still_renders(monkeypatch, tmp_path):
+    import agent.pipeline as pipeline_mod
+
+    brief = load_brief(EXAMPLE)
+    brief = brief.model_copy(update={"da": brief.da.model_copy(update={"palette": ["#1B4D3E"]})})
+    monkeypatch.setattr(pipeline_mod, "load_brief", lambda _p: brief)
+    run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path, render_png=False)
+    assert list((run_dir / "renders").glob("*.html"))
 
 
 def test_run_produces_all_artifacts_and_respects_zone_limits(tmp_path):
@@ -236,3 +277,91 @@ def test_run_produces_all_artifacts_and_respects_zone_limits(tmp_path):
             assert "<html" in html
             for text in v["copy"].values():
                 assert str(escape(text)) in html, (v["id"], text)
+
+
+def test_capture_sizes_follow_meta_recommendation():
+    from agent.render import capture_size
+
+    assert capture_size("4:5") == (1440, 1800)
+    assert capture_size("1:1") == (1440, 1440)
+    assert capture_size("9:16") == (1440, 2560)
+
+
+def test_safe_zones_by_ratio():
+    from agent.render import safe_zone_px
+
+    assert safe_zone_px("9:16") == (268.8, 64.8, 672.0, 64.8)
+    assert safe_zone_px("4:5") == (75.6, 75.6, 75.6, 75.6)
+
+
+def test_safe_zone_variables_and_overlay_in_html(tmp_path):
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "offre_prix_barre")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["9:16"], hook="x", score=1.0, rationale="r")
+    zones = {"headline": "Titre", "price_old": "39 €", "price_new": "29 €"}
+    html = render_html(variant, fmt, zones, brief, "9:16", tmp_path).read_text(encoding="utf-8")
+    assert "--safe-bottom: 672.0px" in html and 'class="safe-ov"' not in html
+    ctrl = render_html(variant, fmt, zones, brief, "9:16", tmp_path, safe_overlay=True).read_text(encoding="utf-8")
+    assert 'class="safe-ov"' in ctrl
+
+
+def test_control_run_is_flagged_in_review(tmp_path):
+    run_dir = run(EXAMPLE, out_root=tmp_path, render_png=False, safe_overlay=True)
+    assert "ne pas publier" in (run_dir / "review.md").read_text(encoding="utf-8")
+
+
+def test_only_fonts_used_by_the_templates_are_loaded_and_checked(monkeypatch, tmp_path):
+    import agent.pipeline as pipeline_mod
+
+    brief = load_brief(EXAMPLE)
+    brief = brief.model_copy(update={"da": brief.da.model_copy(update={"fonts": ["Playfair Display", "Inter", "Lora"]})})
+    monkeypatch.setattr(pipeline_mod, "load_brief", lambda _p: brief)
+    run_dir = pipeline_mod.run(EXAMPLE, out_root=tmp_path, render_png=False)
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert set(manifest["fonts"]["sources"]) == {"Playfair Display", "Inter"}   # Lora n'est jamais utilisée
+
+
+def test_white_title_over_a_photo_gets_a_dark_top_veil(tmp_path):
+    # le titre et la marque sont blancs, posés en haut de la photo : sur une photo claire (marbre, ciel),
+    # ils deviennent illisibles sans voile sombre derrière eux
+    from PIL import Image
+
+    photo = tmp_path / "photo_claire.png"
+    Image.new("RGB", (120, 200), (235, 235, 230)).save(photo)
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=["9:16"], hook="x", score=1.0, rationale="r")
+    html = render_html(variant, fmt, {"headline": "Titre"}, brief, "9:16", tmp_path,
+                       scene_image=photo).read_text(encoding="utf-8")
+    assert 'class="scrim-top"' in html
+    assert "linear-gradient(to bottom, rgba(0,0,0," in html
+
+
+def _render_titre(tmp_path, ratio, scene_image=None, product_image=None):
+    brief = load_brief(EXAMPLE)
+    fmt = next(f for f in load_all_formats() if f.id == "titre_produit_en_situation")
+    variant = Variant(id="v1", angle_id="a", format_id=fmt.id, ratios=[ratio], hook="x", score=1.0, rationale="r")
+    look = make_look(fmt.fond, *palette_of(brief))
+    html = render_html(variant, fmt, {"headline": "Titre", "offer_line": "-20 %"}, brief, ratio, tmp_path,
+                       scene_image=scene_image, product_image=product_image, look=look).read_text(encoding="utf-8")
+    return html, look
+
+
+def test_product_inset_stays_in_the_safe_area_flow(tmp_path):
+    # la miniature produit est un élément clé : dans le flux du bas de contenu (au-dessus de l'offre, donc
+    # hors bande basse), jamais positionnée depuis le bord du canevas
+    from PIL import Image
+
+    photo, produit = tmp_path / "scene.png", tmp_path / "produit.png"
+    Image.new("RGB", (120, 200), (235, 235, 230)).save(photo)
+    Image.new("RGBA", (40, 80), (200, 100, 50, 255)).save(produit)
+    html, _ = _render_titre(tmp_path, "9:16", scene_image=photo, product_image=produit)
+    bottom = html.index('<div class="bottom">')
+    assert bottom < html.index('class="product-inset"') < html.index('class="offer"')
+
+
+def test_title_without_photo_uses_the_readable_colour_of_the_accent_surface(tmp_path):
+    html, look = _render_titre(tmp_path, "4:5")
+    assert look.on_accent_surface == "#111111"
+    assert f"--txt: {look.on_accent_surface};" in html
+    assert 'class="scrim"' not in html          # les voiles ne servent qu'à assombrir une photo
